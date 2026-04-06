@@ -6,62 +6,85 @@
 script = ExtResource("1_ui")
 
 [node name="Panel" type="Panel" parent="."]
-anchors_preset = 0
-anchor_left = 0.0
-anchor_top = 0.5
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
+offset_top = 960.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="GoldLabel" type="Label" parent="Panel"]
-offset_left = 40.0
+[node name="MarginContainer" type="MarginContainer" parent="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
 offset_top = 20.0
-offset_right = 300.0
-offset_bottom = 60.0
-text = "Gold: 0"
-horizontal_alignment = 1.0
+offset_right = -24.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
 
-[node name="WaveLabel" type="Label" parent="Panel"]
-offset_left = 40.0
-offset_top = 70.0
-offset_right = 400.0
-offset_bottom = 110.0
+[node name="Content" type="VBoxContainer" parent="Panel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="StatsContainer" type="VBoxContainer" parent="Panel/MarginContainer/Content"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="GoldLabel" type="Label" parent="Panel/MarginContainer/Content/StatsContainer"]
+layout_mode = 2
+text = "Gold: 0"
+
+[node name="WaveLabel" type="Label" parent="Panel/MarginContainer/Content/StatsContainer"]
+layout_mode = 2
 text = "Wave: 1 | Monsters: 0/10"
 
-[node name="HeroStatsLabel" type="Label" parent="Panel"]
-offset_left = 40.0
-offset_top = 120.0
-offset_right = 400.0
-offset_bottom = 160.0
+[node name="HeroStatsLabel" type="Label" parent="Panel/MarginContainer/Content/StatsContainer"]
+layout_mode = 2
 text = "ATK: 10 | SPD: 1.0 | HP: 100/100"
 
-[node name="UpgradeContainer" type="VBoxContainer" parent="Panel"]
-offset_left = 40.0
-offset_top = 180.0
-offset_right = 500.0
-offset_bottom = 800.0
-
-[node name="DamageButton" type="Button" parent="Panel/UpgradeContainer"]
+[node name="UpgradeContainer" type="VBoxContainer" parent="Panel/MarginContainer/Content"]
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="DamageButton" type="Button" parent="Panel/MarginContainer/Content/UpgradeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 64)
 text = "Damage Lv.1 Cost: 10"
 
-[node name="SpeedButton" type="Button" parent="Panel/UpgradeContainer"]
+[node name="SpeedButton" type="Button" parent="Panel/MarginContainer/Content/UpgradeContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 64)
 text = "Attack Speed Lv.1 Cost: 15"
 
-[node name="HpButton" type="Button" parent="Panel/UpgradeContainer"]
+[node name="HpButton" type="Button" parent="Panel/MarginContainer/Content/UpgradeContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 64)
 text = "Max HP Lv.1 Cost: 12"
 
-[node name="CritChanceButton" type="Button" parent="Panel/UpgradeContainer"]
+[node name="CritChanceButton" type="Button" parent="Panel/MarginContainer/Content/UpgradeContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 64)
 text = "Crit Chance Lv.1 Cost: 20"
 
-[node name="CritDmgButton" type="Button" parent="Panel/UpgradeContainer"]
+[node name="CritDmgButton" type="Button" parent="Panel/MarginContainer/Content/UpgradeContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 64)
 text = "Crit Damage Lv.1 Cost: 25"
+
+[node name="DebugGoldButton" type="Button" parent="Panel/MarginContainer/Content/UpgradeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 64)
+text = "Debug +100 Gold"

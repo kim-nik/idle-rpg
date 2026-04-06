@@ -4,7 +4,7 @@ signal monster_died(gold_reward: int)
 signal monster_attacked(damage: float)
 
 @onready var health_bar: ProgressBar = $HealthBar
-@onready var sprite: Sprite2D = $Sprite2D
+@onready var body: CanvasItem = $Body
 
 var monster_type: String = "slime"
 var current_hp: float = 50.0
@@ -12,6 +12,9 @@ var max_hp: float = 50.0
 var attack_power: float = 5.0
 var gold_reward: int = 5
 var move_speed: float = 30.0
+var attack_interval: float = 1.5
+var attack_timer: float = 0.0
+var attack_range: float = 120.0
 
 var target_position: Vector2
 var is_dead: bool = false
@@ -35,9 +38,10 @@ func setup(type: String, wave_bonus: float = 1.0) -> void:
 	attack_power = stats.atk * wave_bonus
 	gold_reward = int(stats.gold * wave_bonus)
 	move_speed = stats.speed
-	sprite.modulate = stats.color
+	body.modulate = stats.color
 	is_dead = false
 	death_timer = 0.0
+	attack_timer = 0.0
 	visible = true
 	modulate.a = 1.0
 
@@ -48,11 +52,23 @@ func _process(delta: float) -> void:
 		if death_timer >= 0.3:
 			queue_free()
 		return
-	
-	if global_position.x > target_position.x:
-		global_position.x -= move_speed * delta
-	else:
-		pass
+
+	var hero = get_node_or_null("../../Hero")
+	if hero == null:
+		return
+
+	global_position.y = hero.global_position.y
+	target_position = Vector2(hero.global_position.x + attack_range, hero.global_position.y)
+	var horizontal_distance = global_position.x - hero.global_position.x
+
+	if horizontal_distance > attack_range:
+		global_position.x = move_toward(global_position.x, target_position.x, move_speed * delta)
+		return
+
+	attack_timer += delta
+	if attack_timer >= attack_interval:
+		attack_timer = 0.0
+		attack_hero(hero)
 
 func take_damage(damage: float) -> bool:
 	current_hp -= damage

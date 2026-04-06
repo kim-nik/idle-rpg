@@ -4,7 +4,7 @@ signal attack_hit(damage: float, is_crit: bool)
 signal hero_died()
 
 @onready var health_bar: ProgressBar = $HealthBar
-@onready var sprite: Sprite2D = $Sprite2D
+@onready var body: Node2D = $Body
 
 var current_hp: float = 100.0
 var max_hp: float = 100.0
@@ -22,7 +22,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if is_running:
-		sprite.flip_h = not facing_right
+		body.scale.x = -1.0 if facing_right else 1.0
 	update_health_bar()
 
 func update_stats() -> void:

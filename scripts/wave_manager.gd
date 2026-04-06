@@ -56,7 +56,11 @@ func spawn_monster() -> void:
 	var monster = monster_scene.instantiate()
 	
 	var wave_bonus = 1.0 + (current_wave - 1) * 0.1
-	monster.position = Vector2(900, 400)
+	var hero = get_node_or_null("../CombatArea/Hero")
+	var spawn_y = 480.0
+	if hero:
+		spawn_y = hero.position.y
+	monster.position = Vector2(900, spawn_y)
 	monster_container.add_child(monster)
 
 	var monster_type = get_monster_type_for_wave(current_wave)

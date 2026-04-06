@@ -2,15 +2,16 @@ extends CanvasLayer
 
 signal upgrade_clicked(upgrade_name: String)
 
-@onready var gold_label: Label = $Panel/GoldLabel
-@onready var wave_label: Label = $Panel/WaveLabel
-@onready var hero_stats_label: Label = $Panel/HeroStatsLabel
+@onready var gold_label: Label = $Panel/MarginContainer/Content/StatsContainer/GoldLabel
+@onready var wave_label: Label = $Panel/MarginContainer/Content/StatsContainer/WaveLabel
+@onready var hero_stats_label: Label = $Panel/MarginContainer/Content/StatsContainer/HeroStatsLabel
 
-@onready var damage_btn: Button = $Panel/UpgradeContainer/DamageButton
-@onready var speed_btn: Button = $Panel/UpgradeContainer/SpeedButton
-@onready var hp_btn: Button = $Panel/UpgradeContainer/HpButton
-@onready var crit_chance_btn: Button = $Panel/UpgradeContainer/CritChanceButton
-@onready var crit_dmg_btn: Button = $Panel/UpgradeContainer/CritDmgButton
+@onready var damage_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/DamageButton
+@onready var speed_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/SpeedButton
+@onready var hp_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/HpButton
+@onready var crit_chance_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/CritChanceButton
+@onready var crit_dmg_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/CritDmgButton
+@onready var debug_gold_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/DebugGoldButton
 
 var upgrade_system
 var save_manager
@@ -24,6 +25,7 @@ func _ready() -> void:
 	hp_btn.pressed.connect(_on_hp_clicked)
 	crit_chance_btn.pressed.connect(_on_crit_chance_clicked)
 	crit_dmg_btn.pressed.connect(_on_crit_dmg_clicked)
+	debug_gold_btn.pressed.connect(_on_debug_gold_clicked)
 	
 	_update_ui()
 
@@ -75,6 +77,11 @@ func _on_crit_chance_clicked() -> void:
 
 func _on_crit_dmg_clicked() -> void:
 	_purchase_upgrade("crit_damage")
+
+func _on_debug_gold_clicked() -> void:
+	save_manager.save_data.gold += 100
+	save_manager.save()
+	_update_ui()
 
 func _purchase_upgrade(upgrade_name: String) -> void:
 	if upgrade_system.purchase_upgrade(upgrade_name):

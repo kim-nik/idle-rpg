@@ -8,10 +8,21 @@
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
 
+[node name="ArenaBackground" type="ColorRect" parent="."]
+offset_right = 1080.0
+offset_bottom = 960.0
+color = Color(0.16, 0.18, 0.22, 1)
+
+[node name="ArenaDivider" type="ColorRect" parent="."]
+offset_top = 960.0
+offset_right = 1080.0
+offset_bottom = 968.0
+color = Color(0.95, 0.75, 0.32, 1)
+
 [node name="CombatArea" type="Node2D" parent="."]
 
 [node name="Hero" parent="CombatArea" instance=ExtResource("2_hero")]
-position = Vector2(200, 480)
+position = Vector2(220, 480)
 
 [node name="Monsters" type="Node" parent="CombatArea"]
 

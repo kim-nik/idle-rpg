@@ -26,7 +26,10 @@ func run_smoke_test() -> void:
 		upgrade_system.load_from_save()
 
 	await _record_test("main scene bootstrap", await test_main_scene_bootstrap())
+	await _record_test("screen layout", test_screen_layout())
 	await _record_test("hero baseline stats", test_hero_baseline_stats())
+	await _record_test("debug screenshot", await test_debug_screenshot())
+	await _record_test("debug gold button", test_debug_gold_button())
 	await _record_test("upgrade purchase flow", test_upgrade_purchase_flow())
 	await _record_test("save roundtrip", test_save_roundtrip())
 	await _record_test("monster spawn and combat", await test_monster_spawn_and_combat())
@@ -117,6 +120,83 @@ func test_hero_baseline_stats() -> bool:
 
 	return true
 
+func test_screen_layout() -> bool:
+	var combat_background = main_scene.get_node_or_null("ArenaBackground") as ColorRect
+	var divider = main_scene.get_node_or_null("ArenaDivider") as ColorRect
+	var panel = main_scene.get_node_or_null("UIArea/Panel") as Panel
+	var viewport_width = int(ProjectSettings.get_setting("display/window/size/viewport_width", 0))
+	var viewport_height = int(ProjectSettings.get_setting("display/window/size/viewport_height", 0))
+	var orientation = int(ProjectSettings.get_setting("display/window/handheld/orientation", -1))
+
+	if viewport_width != 1080 or viewport_height != 1920:
+		push_error("Project resolution is %dx%d instead of 1080x1920" % [viewport_width, viewport_height])
+		return false
+	if orientation != 1:
+		push_error("Handheld orientation is %d instead of portrait" % orientation)
+		return false
+	if combat_background == null or divider == null or panel == null:
+		push_error("Main layout nodes are missing")
+		return false
+	if not is_equal_approx(combat_background.size.y, 960.0):
+		push_error("Combat area is not half-screen height")
+		return false
+	if not is_equal_approx(divider.position.y, 960.0):
+		push_error("Arena divider is not centered vertically")
+		return false
+	if not is_equal_approx(panel.position.y, 960.0):
+		push_error("UI panel does not start at half-screen")
+		return false
+	if not is_equal_approx(panel.size.y, 960.0):
+		push_error("UI panel does not fill the bottom half")
+		return false
+
+	var upgrade_container = main_scene.get_node_or_null("UIArea/Panel/MarginContainer/Content/UpgradeContainer") as VBoxContainer
+	var debug_button = main_scene.get_node_or_null("UIArea/Panel/MarginContainer/Content/UpgradeContainer/DebugGoldButton") as Button
+	if upgrade_container == null or debug_button == null:
+		push_error("Upgrade stack or debug button is missing")
+		return false
+	if debug_button.get_parent() != upgrade_container:
+		push_error("Debug button is not inside the upgrade stack")
+		return false
+
+	for child in upgrade_container.get_children():
+		var button = child as Button
+		if button and button.size_flags_horizontal != Control.SIZE_EXPAND_FILL:
+			push_error("Upgrade button does not fill available width")
+			return false
+
+	return true
+
+func test_debug_screenshot() -> bool:
+	if main_scene == null or not main_scene.has_method("capture_debug_screenshot"):
+		push_error("Main scene does not expose debug screenshot capture")
+		return false
+
+	var screenshot_path = await main_scene.capture_debug_screenshot("smoke_test.png")
+	if screenshot_path.is_empty():
+		push_error("Screenshot path was empty")
+		return false
+	if not FileAccess.file_exists(screenshot_path):
+		push_error("Screenshot file was not created: %s" % screenshot_path)
+		return false
+
+	return true
+
+func test_debug_gold_button() -> bool:
+	var ui = main_scene.get_node_or_null("UIArea")
+	if ui == null or not ui.has_method("_on_debug_gold_clicked"):
+		push_error("UI debug gold action is unavailable")
+		return false
+
+	save_manager.save_data.gold = 0
+	ui._on_debug_gold_clicked()
+
+	if save_manager.save_data.gold != 100:
+		push_error("Debug gold button did not add 100 gold")
+		return false
+
+	return true
+
 func test_upgrade_purchase_flow() -> bool:
 	var hero = _get_hero()
 	if hero == null:
@@ -186,6 +266,9 @@ func test_monster_spawn_and_combat() -> bool:
 		return false
 	if save_manager.save_data.monsters_killed != 1:
 		push_error("Monster kill was not persisted")
+		return false
+	if not is_equal_approx(monster.position.y, hero.position.y):
+		push_error("Monster did not stay on the hero's horizontal line")
 		return false
 
 	return true
