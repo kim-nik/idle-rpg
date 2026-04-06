@@ -30,6 +30,7 @@ func run_smoke_test() -> void:
 	await _record_test("hero baseline stats", test_hero_baseline_stats())
 	await _record_test("debug screenshot", await test_debug_screenshot())
 	await _record_test("debug gold button", test_debug_gold_button())
+	await _record_test("reset progress button", test_reset_progress_button())
 	await _record_test("upgrade purchase flow", test_upgrade_purchase_flow())
 	await _record_test("save roundtrip", test_save_roundtrip())
 	await _record_test("monster spawn and combat", await test_monster_spawn_and_combat())
@@ -152,11 +153,15 @@ func test_screen_layout() -> bool:
 
 	var upgrade_container = main_scene.get_node_or_null("UIArea/Panel/MarginContainer/Content/UpgradeContainer") as VBoxContainer
 	var debug_button = main_scene.get_node_or_null("UIArea/Panel/MarginContainer/Content/UpgradeContainer/DebugGoldButton") as Button
-	if upgrade_container == null or debug_button == null:
-		push_error("Upgrade stack or debug button is missing")
+	var reset_button = main_scene.get_node_or_null("UIArea/Panel/MarginContainer/Content/UpgradeContainer/ResetProgressButton") as Button
+	if upgrade_container == null or debug_button == null or reset_button == null:
+		push_error("Upgrade stack or utility buttons are missing")
 		return false
 	if debug_button.get_parent() != upgrade_container:
 		push_error("Debug button is not inside the upgrade stack")
+		return false
+	if reset_button.get_parent() != upgrade_container:
+		push_error("Reset button is not inside the upgrade stack")
 		return false
 
 	for child in upgrade_container.get_children():
@@ -193,6 +198,47 @@ func test_debug_gold_button() -> bool:
 
 	if save_manager.save_data.gold != 100:
 		push_error("Debug gold button did not add 100 gold")
+		return false
+
+	return true
+
+func test_reset_progress_button() -> bool:
+	var ui = main_scene.get_node_or_null("UIArea")
+	var hero = _get_hero()
+	if ui == null or not ui.has_method("_on_reset_progress_clicked") or hero == null:
+		push_error("UI reset progress action is unavailable")
+		return false
+
+	save_manager.save_data.gold = 345
+	save_manager.save_data.damage_level = 4
+	save_manager.save_data.attack_speed_level = 3
+	save_manager.save_data.max_hp_level = 5
+	save_manager.save_data.crit_chance_level = 2
+	save_manager.save_data.crit_damage_level = 6
+	save_manager.save_data.wave = 8
+	save_manager.save_data.monsters_killed = 7
+	upgrade_system.load_from_save()
+	hero.current_hp = 1
+
+	ui._on_reset_progress_clicked()
+
+	if save_manager.save_data.gold != 0:
+		push_error("Reset did not clear gold")
+		return false
+	if save_manager.save_data.damage_level != 1 or save_manager.save_data.attack_speed_level != 1:
+		push_error("Reset did not restore upgrade levels")
+		return false
+	if save_manager.save_data.max_hp_level != 1 or save_manager.save_data.crit_chance_level != 1 or save_manager.save_data.crit_damage_level != 1:
+		push_error("Reset did not restore all progression levels")
+		return false
+	if save_manager.save_data.wave != 1 or save_manager.save_data.monsters_killed != 0:
+		push_error("Reset did not restore wave progress")
+		return false
+	if upgrade_system.damage_level != 1 or upgrade_system.max_hp_level != 1:
+		push_error("Upgrade system was not refreshed after reset")
+		return false
+	if hero.current_hp != hero.max_hp:
+		push_error("Hero health was not restored after reset")
 		return false
 
 	return true

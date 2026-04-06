@@ -88,3 +88,9 @@ layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 64)
 text = "Debug +100 Gold"
+
+[node name="ResetProgressButton" type="Button" parent="Panel/MarginContainer/Content/UpgradeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 64)
+text = "Reset Progress"

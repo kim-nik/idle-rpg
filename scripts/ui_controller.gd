@@ -12,6 +12,7 @@ signal upgrade_clicked(upgrade_name: String)
 @onready var crit_chance_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/CritChanceButton
 @onready var crit_dmg_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/CritDmgButton
 @onready var debug_gold_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/DebugGoldButton
+@onready var reset_progress_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/ResetProgressButton
 
 var upgrade_system
 var save_manager
@@ -26,6 +27,7 @@ func _ready() -> void:
 	crit_chance_btn.pressed.connect(_on_crit_chance_clicked)
 	crit_dmg_btn.pressed.connect(_on_crit_dmg_clicked)
 	debug_gold_btn.pressed.connect(_on_debug_gold_clicked)
+	reset_progress_btn.pressed.connect(_on_reset_progress_clicked)
 	
 	_update_ui()
 
@@ -81,6 +83,15 @@ func _on_crit_dmg_clicked() -> void:
 func _on_debug_gold_clicked() -> void:
 	save_manager.save_data.gold += 100
 	save_manager.save()
+	_update_ui()
+
+func _on_reset_progress_clicked() -> void:
+	save_manager.reset()
+	upgrade_system.load_from_save()
+	var hero = get_node_or_null("../CombatArea/Hero")
+	if hero:
+		hero.current_hp = upgrade_system.get_max_hp()
+		hero.update_stats()
 	_update_ui()
 
 func _purchase_upgrade(upgrade_name: String) -> void:
