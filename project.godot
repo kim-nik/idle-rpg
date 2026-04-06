@@ -10,15 +10,31 @@ config_version=5
 
 [application]
 
-config/name="godot_android_game"
+config/name="Idle RPG"
+run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
 
+[autoload]
+
+SaveManager="*res://scripts/save_manager.gd"
+UpgradeSystem="*res://scripts/upgrade_system.gd"
+
+[display]
+
+width=1080
+height=1920
+window/size/viewport_width=1080
+window/size/viewport_height=1920
+window/size/resizable=false
+window/stretch/mode="viewport"
+window/stretch/aspect="keep"
+
 [physics]
 
-3d/physics_engine="Jolt Physics"
+common/physics_interpolation=true
 
 [rendering]
 
-rendering_device/driver.windows="d3d12"
 renderer/rendering_method="mobile"
+textures/canvas_textures/default_texture_filter=0

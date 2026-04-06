@@ -1,0 +1,20 @@
+[gd_scene load_steps=5 format=3 uid="uid://cjvkm8q2k3xhw"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" uid="uid://bkv5xq4n6yplm" path="res://scenes/Hero.tscn" id="2_hero"]
+[ext_resource type="PackedScene" uid="uid://ui_panel" path="res://scenes/UI.tscn" id="3_ui"]
+[ext_resource type="PackedScene" uid="uid://wave_mgr" path="res://scenes/WaveManager.tscn" id="4_wm"]
+
+[node name="Main" type="Node"]
+script = ExtResource("1_main")
+
+[node name="CombatArea" type="Node2D" parent="."]
+
+[node name="Hero" parent="CombatArea" instance=ExtResource("2_hero")]
+position = Vector2(200, 480)
+
+[node name="Monsters" type="Node" parent="CombatArea"]
+
+[node name="WaveManager" parent="." instance=ExtResource("4_wm")]
+
+[node name="UIArea" parent="." instance=ExtResource("3_ui")]
