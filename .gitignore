@@ -1,6 +1,5 @@
 # Godot 4+ specific ignores
 .godot/
-.godot/
 .import/
 export/
 export_presets.cfg
@@ -14,6 +13,7 @@ export_presets.cfg
 *.jks
 *.apk
 *.aab
+*.uid
 android/build/
 android/app/
 android/gradle/
