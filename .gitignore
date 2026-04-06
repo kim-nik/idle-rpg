@@ -1,0 +1,21 @@
+# Godot 4+ specific ignores
+.godot/
+.godot/
+.import/
+export/
+export_presets.cfg
+*.tmp
+*.bak
+*.backup
+*.import
+*.log
+*.user
+*.keystore
+*.jks
+*.apk
+*.aab
+android/build/
+android/app/
+android/gradle/
+android/.gradle/
+local.properties
