@@ -95,6 +95,14 @@ When generating code, ensure:
 6. Comments in English
 7. Error handling with `push_error()` or `push_warning()`
 
+## Testing Requirements
+
+- Always run relevant tests after code changes.
+- For this project, run the headless smoke test when the change can affect gameplay, scenes, autoloads, saves, or progression:
+  - `godot --headless --path E:\android_game --scene res://scenes/SmokeTest.tscn`
+- Fix any test failures or runtime errors found during verification before considering the task complete.
+- If a test cannot be run in the current environment, state this explicitly and explain why.
+
 ## Adding New Scenes
 
 1. Create scene in Godot editor

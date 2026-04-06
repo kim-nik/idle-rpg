@@ -28,7 +28,9 @@ func run_smoke_test() -> void:
 	await _record_test("main scene bootstrap", await test_main_scene_bootstrap())
 	await _record_test("hero baseline stats", test_hero_baseline_stats())
 	await _record_test("upgrade purchase flow", test_upgrade_purchase_flow())
+	await _record_test("save roundtrip", test_save_roundtrip())
 	await _record_test("monster spawn and combat", await test_monster_spawn_and_combat())
+	await _record_test("wave completion persistence", test_wave_completion_persistence())
 
 	if save_manager:
 		save_manager.save_data = original_save_data
@@ -184,6 +186,79 @@ func test_monster_spawn_and_combat() -> bool:
 		return false
 	if save_manager.save_data.monsters_killed != 1:
 		push_error("Monster kill was not persisted")
+		return false
+
+	return true
+
+func test_save_roundtrip() -> bool:
+	save_manager.save_data = {
+		"gold": 77,
+		"damage_level": 3,
+		"attack_speed_level": 2,
+		"max_hp_level": 4,
+		"crit_chance_level": 2,
+		"crit_damage_level": 3,
+		"wave": 6,
+		"monsters_killed": 9
+	}
+	save_manager.save()
+
+	save_manager.save_data.gold = 0
+	save_manager.save_data.wave = 1
+	save_manager.load_game()
+	upgrade_system.load_from_save()
+
+	if save_manager.save_data.gold != 77:
+		push_error("Gold did not survive save/load roundtrip")
+		return false
+	if save_manager.save_data.wave != 6:
+		push_error("Wave did not survive save/load roundtrip")
+		return false
+	if upgrade_system.damage_level != 3:
+		push_error("Upgrade levels were not reloaded from save")
+		return false
+	if upgrade_system.max_hp_level != 4:
+		push_error("Max HP level was not reloaded from save")
+		return false
+
+	return true
+
+func test_wave_completion_persistence() -> bool:
+	var wave_manager = _get_wave_manager()
+	if wave_manager == null:
+		push_error("WaveManager instance is unavailable")
+		return false
+
+	save_manager.reset()
+	upgrade_system.load_from_save()
+	wave_manager.load_wave_from_save()
+	wave_manager.start_next_wave()
+
+	save_manager.save_data.wave = 1
+	save_manager.save_data.monsters_killed = 9
+	wave_manager.current_wave = 1
+	wave_manager.monsters_killed = 9
+	wave_manager.monsters_in_wave = 1
+	wave_manager.is_wave_active = true
+	wave_manager.is_between_waves = false
+
+	wave_manager._on_monster_died(5)
+	upgrade_system.load_from_save()
+
+	if wave_manager.current_wave != 2:
+		push_error("Current wave did not advance after completion")
+		return false
+	if save_manager.save_data.wave != 2:
+		push_error("Completed wave was not persisted")
+		return false
+	if not wave_manager.is_between_waves:
+		push_error("Wave manager did not enter intermission state")
+		return false
+	if save_manager.save_data.gold != 5:
+		push_error("Wave completion reward was not saved")
+		return false
+	if save_manager.save_data.monsters_killed != 10:
+		push_error("Monster kill counter did not reach the wave total")
 		return false
 
 	return true
