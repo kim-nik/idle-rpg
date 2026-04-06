@@ -47,13 +47,14 @@ func _update_ui() -> void:
 	_update_upgrade_button(crit_dmg_btn, "Crit Damage", upgrades.crit_damage.level, upgrades.crit_damage.cost)
 	
 	if hero_stats_label:
-		var hero = get_node("/root/Main/CombatArea/Hero")
-		hero_stats_label.text = "ATK: %d | SPD: %.1f | HP: %d/%d" % [
-			int(upgrade_system.get_damage()),
-			upgrade_system.get_attack_speed(),
-			int(hero.current_hp),
-			int(upgrade_system.get_max_hp())
-		]
+		var hero = get_node_or_null("../CombatArea/Hero")
+		if hero:
+			hero_stats_label.text = "ATK: %d | SPD: %.1f | HP: %d/%d" % [
+				int(upgrade_system.get_damage()),
+				upgrade_system.get_attack_speed(),
+				int(hero.current_hp),
+				int(upgrade_system.get_max_hp())
+			]
 
 func _update_upgrade_button(btn: Button, name: String, level: int, cost: int) -> void:
 	if btn:
@@ -78,7 +79,7 @@ func _on_crit_dmg_clicked() -> void:
 func _purchase_upgrade(upgrade_name: String) -> void:
 	if upgrade_system.purchase_upgrade(upgrade_name):
 		save_manager.save()
-		var hero = get_node("/root/Main/CombatArea/Hero")
+		var hero = get_node_or_null("../CombatArea/Hero")
 		if hero:
 			hero.update_stats()
 		_update_ui()

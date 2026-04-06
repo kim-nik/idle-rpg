@@ -56,15 +56,13 @@ func spawn_monster() -> void:
 	var monster = monster_scene.instantiate()
 	
 	var wave_bonus = 1.0 + (current_wave - 1) * 0.1
-	
+	monster.position = Vector2(900, 400)
+	monster_container.add_child(monster)
+
 	var monster_type = get_monster_type_for_wave(current_wave)
 	monster.setup(monster_type, wave_bonus)
-	
-	monster.position = Vector2(900, 400)
 	monster.connect("monster_died", _on_monster_died)
 	monster.connect("monster_attacked", _on_monster_attacked)
-	
-	monster_container.add_child(monster)
 	monsters_in_wave += 1
 	emit_signal("monster_spawned", monster)
 
@@ -90,7 +88,7 @@ func _on_monster_died(gold_reward: int) -> void:
 		complete_wave()
 
 func _on_monster_attacked(damage: float) -> void:
-	var hero = get_node("/root/Main/CombatArea/Hero")
+	var hero = get_node_or_null("../CombatArea/Hero")
 	if hero:
 		hero.take_damage(damage)
 
