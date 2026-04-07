@@ -3,6 +3,8 @@ extends Node2D
 signal attack_hit(target_position: Vector2, damage: float, is_crit: bool)
 signal hero_died()
 
+const CombatMathRef = preload("res://scripts/combat_math.gd")
+
 const ATTACK_BACKSTEP_DISTANCE: float = 10.0
 const ATTACK_LUNGE_DISTANCE: float = 18.0
 const ATTACK_BACKSTEP_DURATION: float = 0.08
@@ -18,6 +20,8 @@ var base_damage: float = 10.0
 var attack_speed: float = 1.0
 var crit_chance: float = 5.0
 var crit_multiplier: float = 150.0
+var armor: float = 0.0
+var health_regen: float = 0.0
 var attack_range: float = 140.0
 
 var attack_timer: float = 0.0
@@ -31,22 +35,26 @@ func _ready() -> void:
 	body_base_position = body.position
 	update_stats()
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if is_running:
 		body.scale.x = -1.0 if facing_right else 1.0
+	apply_regeneration(delta)
 	update_health_bar()
 
 func update_stats() -> void:
 	var upgrade_system = get_node("/root/UpgradeSystem")
-	max_hp = upgrade_system.get_max_hp()
-	base_damage = upgrade_system.get_damage()
-	attack_speed = upgrade_system.get_attack_speed()
-	crit_chance = upgrade_system.get_crit_chance()
-	crit_multiplier = upgrade_system.get_crit_damage()
-	
+	var stats = CombatMathRef.build_hero_stats(upgrade_system)
+	max_hp = stats.max_hp
+	base_damage = stats.attack_damage
+	attack_speed = stats.attack_speed
+	crit_chance = stats.crit_chance
+	crit_multiplier = stats.crit_damage
+	armor = stats.armor
+	health_regen = stats.health_regen
+
 	if current_hp > max_hp:
 		current_hp = max_hp
-	elif current_hp <= 0:
+	elif current_hp <= 0 and max_hp > 0:
 		current_hp = max_hp
 
 func take_damage(amount: float) -> void:
@@ -59,13 +67,16 @@ func take_damage(amount: float) -> void:
 func heal(amount: float) -> void:
 	current_hp = min(current_hp + amount, max_hp)
 
+func apply_regeneration(delta: float) -> void:
+	current_hp = CombatMathRef.apply_regeneration(current_hp, max_hp, health_regen, delta)
+
 func update_health_bar() -> void:
 	if health_bar:
 		health_bar.max_value = max_hp
 		health_bar.value = current_hp
 
 func get_attack_interval() -> float:
-	return 1.0 / attack_speed
+	return CombatMathRef.get_attack_interval(get_combat_stats())
 
 func update_attack_cooldown(delta: float) -> void:
 	if is_attacking:
@@ -120,20 +131,32 @@ func try_attack() -> bool:
 		return true
 	return false
 
-func get_damage_output() -> Dictionary:
-	var damage = base_damage
-	var is_crit = randf() * 100.0 < crit_chance
-	if is_crit:
-		damage *= crit_multiplier / 100.0
-	return {"damage": damage, "is_crit": is_crit}
+func get_damage_output(defender_stats: Dictionary = {}) -> Dictionary:
+	if defender_stats.is_empty():
+		return CombatMathRef.roll_attack(get_combat_stats())
+	return CombatMathRef.resolve_attack(get_combat_stats(), defender_stats)
+
+func get_combat_stats() -> Dictionary:
+	return CombatMathRef.create_stat_block({
+		"max_hp": max_hp,
+		"attack_damage": base_damage,
+		"attack_speed": attack_speed,
+		"crit_chance": crit_chance,
+		"crit_damage": crit_multiplier,
+		"armor": armor,
+		"health_regen": health_regen
+	})
 
 func _finish_attack_hit(target: Node2D, damage_output: Dictionary) -> void:
 	if not is_instance_valid(target):
 		return
 	if target.get("is_dead"):
 		return
-	target.take_damage(damage_output["damage"])
-	emit_signal("attack_hit", target.global_position, damage_output["damage"], damage_output["is_crit"])
+	var resolved_attack = damage_output
+	if target.has_method("get_combat_stats"):
+		resolved_attack = get_damage_output(target.get_combat_stats())
+	target.take_damage(resolved_attack.final_damage)
+	emit_signal("attack_hit", target.global_position, resolved_attack.final_damage, resolved_attack.is_crit)
 
 func _on_attack_finished() -> void:
 	is_attacking = false

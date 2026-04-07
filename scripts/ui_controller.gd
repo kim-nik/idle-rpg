@@ -15,6 +15,12 @@ signal upgrade_clicked(upgrade_name: String)
 @onready var hp_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/HpRow/HpButton
 @onready var hp_x10_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/HpRow/HpX10Button
 @onready var hp_x100_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/HpRow/HpX100Button
+@onready var armor_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/ArmorRow/ArmorButton
+@onready var armor_x10_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/ArmorRow/ArmorX10Button
+@onready var armor_x100_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/ArmorRow/ArmorX100Button
+@onready var regen_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/RegenRow/RegenButton
+@onready var regen_x10_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/RegenRow/RegenX10Button
+@onready var regen_x100_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/RegenRow/RegenX100Button
 @onready var crit_chance_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/CritChanceRow/CritChanceButton
 @onready var crit_chance_x10_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/CritChanceRow/CritChanceX10Button
 @onready var crit_chance_x100_btn: Button = $Panel/MarginContainer/Content/UpgradeContainer/CritChanceRow/CritChanceX100Button
@@ -44,6 +50,12 @@ func _ready() -> void:
 	hp_btn.pressed.connect(_on_hp_clicked)
 	hp_x10_btn.pressed.connect(func() -> void: _purchase_upgrade_multiple("max_hp", 10))
 	hp_x100_btn.pressed.connect(func() -> void: _purchase_upgrade_multiple("max_hp", 100))
+	armor_btn.pressed.connect(_on_armor_clicked)
+	armor_x10_btn.pressed.connect(func() -> void: _purchase_upgrade_multiple("armor", 10))
+	armor_x100_btn.pressed.connect(func() -> void: _purchase_upgrade_multiple("armor", 100))
+	regen_btn.pressed.connect(_on_regen_clicked)
+	regen_x10_btn.pressed.connect(func() -> void: _purchase_upgrade_multiple("health_regen", 10))
+	regen_x100_btn.pressed.connect(func() -> void: _purchase_upgrade_multiple("health_regen", 100))
 	crit_chance_btn.pressed.connect(_on_crit_chance_clicked)
 	crit_chance_x10_btn.pressed.connect(func() -> void: _purchase_upgrade_multiple("crit_chance", 10))
 	crit_chance_x100_btn.pressed.connect(func() -> void: _purchase_upgrade_multiple("crit_chance", 100))
@@ -78,6 +90,10 @@ func _update_ui() -> void:
 	_update_upgrade_multiplier_buttons("attack_speed", speed_x10_btn, speed_x100_btn)
 	_update_upgrade_button(hp_btn, "Max HP", upgrades.max_hp.level, upgrades.max_hp.cost)
 	_update_upgrade_multiplier_buttons("max_hp", hp_x10_btn, hp_x100_btn)
+	_update_upgrade_button(armor_btn, "Armor", upgrades.armor.level, upgrades.armor.cost)
+	_update_upgrade_multiplier_buttons("armor", armor_x10_btn, armor_x100_btn)
+	_update_upgrade_button(regen_btn, "HP Regen", upgrades.health_regen.level, upgrades.health_regen.cost)
+	_update_upgrade_multiplier_buttons("health_regen", regen_x10_btn, regen_x100_btn)
 	_update_upgrade_button(crit_chance_btn, "Crit Chance", upgrades.crit_chance.level, upgrades.crit_chance.cost)
 	_update_upgrade_multiplier_buttons("crit_chance", crit_chance_x10_btn, crit_chance_x100_btn)
 	_update_upgrade_button(crit_dmg_btn, "Crit Damage", upgrades.crit_damage.level, upgrades.crit_damage.cost)
@@ -86,9 +102,11 @@ func _update_ui() -> void:
 	if hero_stats_label:
 		var hero = get_node_or_null("../CombatArea/Hero")
 		if hero:
-			hero_stats_label.text = "ATK: %d | SPD: %.1f | HP: %d/%d" % [
+			hero_stats_label.text = "ATK: %d | SPD: %.1f | ARM: %d | REG: %.1f | HP: %d/%d" % [
 				int(upgrade_system.get_damage()),
 				upgrade_system.get_attack_speed(),
+				int(upgrade_system.get_armor()),
+				upgrade_system.get_health_regen(),
 				int(hero.current_hp),
 				int(upgrade_system.get_max_hp())
 			]
@@ -112,6 +130,12 @@ func _on_speed_clicked() -> void:
 
 func _on_hp_clicked() -> void:
 	_purchase_upgrade("max_hp")
+
+func _on_armor_clicked() -> void:
+	_purchase_upgrade("armor")
+
+func _on_regen_clicked() -> void:
+	_purchase_upgrade("health_regen")
 
 func _on_crit_chance_clicked() -> void:
 	_purchase_upgrade("crit_chance")

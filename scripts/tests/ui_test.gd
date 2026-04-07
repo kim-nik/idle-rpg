@@ -28,6 +28,8 @@ func run(environment) -> Array[String]:
 	_expect(ui.gold_label.text == "Gold: 0", "Gold label did not show the baseline state", failures)
 	_expect(ui.wave_label.text == "Wave: 1 | Monsters: 0/10", "Wave label did not show baseline progress", failures)
 	_expect(ui.damage_btn.disabled, "Damage button should be disabled without gold", failures)
+	_expect(ui.armor_btn.disabled, "Armor button should be disabled without gold", failures)
+	_expect(ui.regen_btn.disabled, "Regen button should be disabled without gold", failures)
 
 	if environment.main_scene.has_method("capture_debug_screenshot"):
 		var screenshot_path = await environment.main_scene.capture_debug_screenshot("smoke_test.png")
@@ -55,10 +57,19 @@ func run(environment) -> Array[String]:
 	_expect(upgrade_system.damage_level > 1, "Damage x10 did not purchase upgrades", failures)
 	_expect(save_manager.save_data.gold < 1000, "Damage x10 did not spend gold", failures)
 
+	save_manager.save_data.gold = 1000
+	upgrade_system.load_from_save()
+	ui._purchase_upgrade("armor")
+	ui._purchase_upgrade("health_regen")
+	_expect(upgrade_system.armor_level > 1, "Armor purchase did not increase armor level", failures)
+	_expect(upgrade_system.health_regen_level > 1, "Regen purchase did not increase regen level", failures)
+
 	save_manager.save_data.gold = 345
 	save_manager.save_data.damage_level = 4
 	save_manager.save_data.attack_speed_level = 3
 	save_manager.save_data.max_hp_level = 5
+	save_manager.save_data.armor_level = 4
+	save_manager.save_data.health_regen_level = 3
 	save_manager.save_data.crit_chance_level = 2
 	save_manager.save_data.crit_damage_level = 6
 	save_manager.save_data.wave = 8
@@ -73,6 +84,8 @@ func run(environment) -> Array[String]:
 	_expect(save_manager.save_data.damage_level == 1, "Reset did not restore damage level", failures)
 	_expect(save_manager.save_data.attack_speed_level == 1, "Reset did not restore attack speed level", failures)
 	_expect(save_manager.save_data.max_hp_level == 1, "Reset did not restore max HP level", failures)
+	_expect(save_manager.save_data.armor_level == 1, "Reset did not restore armor level", failures)
+	_expect(save_manager.save_data.health_regen_level == 1, "Reset did not restore regen level", failures)
 	_expect(save_manager.save_data.crit_chance_level == 1, "Reset did not restore crit chance level", failures)
 	_expect(save_manager.save_data.crit_damage_level == 1, "Reset did not restore crit damage level", failures)
 	_expect(save_manager.save_data.wave == 1, "Reset did not restore wave progress", failures)

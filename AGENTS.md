@@ -79,6 +79,8 @@ When generating code, ensure:
 
 - Prefer small, focused scripts with a clear responsibility.
 - Keep scene structure predictable and avoid fragile node-path dependencies.
+- Prefer implementing UI, gameplay components, and entity composition in Godot scenes and built-in engine primitives first.
+- Do not build scene structure primarily in code when it can be declared cleanly in `.tscn` scenes.
 - Favor configuration and reusable helpers over duplicated logic.
 - Make gameplay-related values easy to tune and keep magic numbers to a minimum.
 - Use descriptive names for scenes, nodes, functions, and variables.
@@ -88,10 +90,17 @@ When generating code, ensure:
 ## Testing Requirements
 
 - Always run relevant tests after code changes.
+- Always add automated tests for new gameplay, UI, save, or progression behavior when the functionality is testable.
+- When adding a new automated test case, register it in `scripts/smoke_test.gd` so it participates in the full test run.
 - For this project, run the headless smoke test when the change can affect gameplay, scenes, autoloads, saves, or progression:
   - `godot --headless --path E:\android_game --scene res://scenes/SmokeTest.tscn`
 - Fix any test failures or runtime errors found during verification before considering the task complete.
 - If a test cannot be run in the current environment, state this explicitly and explain why.
+
+## Plan Maintenance
+
+- When working from a plan document such as `docs/STAGE_1_PLAN.md`, always mark completed items in that plan as part of the same task.
+- Keep plan documents current so they reflect actual implementation status.
 
 ## Adding New Scenes
 

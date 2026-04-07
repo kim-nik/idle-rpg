@@ -1,6 +1,9 @@
 extends Node2D
 
+signal attack_hit(target_position: Vector2, damage: float)
 signal monster_died(gold_reward: int)
+
+const CombatMathRef = preload("res://scripts/combat_math.gd")
 
 const TARGET_REACH_DURATION: float = 1.0
 const ATTACK_BACKSTEP_DISTANCE: float = 8.0
@@ -17,6 +20,9 @@ var monster_type: String = "slime"
 var current_hp: float = 50.0
 var max_hp: float = 50.0
 var attack_power: float = 5.0
+var attack_speed: float = 1.0
+var armor: float = 0.0
+var health_regen: float = 0.0
 var gold_reward: int = 5
 var move_speed: float = 30.0
 var base_move_speed: float = 30.0
@@ -32,10 +38,10 @@ var body_base_position: Vector2 = Vector2.ZERO
 var attack_tween: Tween
 
 const MONSTER_STATS := {
-	"slime": {"hp": 50.0, "atk": 5.0, "gold": 5.0, "speed": 30.0, "color": Color.GREEN},
-	"goblin": {"hp": 100.0, "atk": 10.0, "gold": 10.0, "speed": 40.0, "color": Color.BROWN},
-	"orc": {"hp": 200.0, "atk": 20.0, "gold": 20.0, "speed": 35.0, "color": Color.RED},
-	"demon": {"hp": 500.0, "atk": 50.0, "gold": 50.0, "speed": 45.0, "color": Color.PURPLE}
+	"slime": {"hp": 50.0, "atk": 5.0, "gold": 5.0, "speed": 30.0, "attack_speed": 0.7, "armor": 0.0, "health_regen": 0.0, "color": Color.GREEN},
+	"goblin": {"hp": 100.0, "atk": 10.0, "gold": 10.0, "speed": 40.0, "attack_speed": 0.75, "armor": 5.0, "health_regen": 0.5, "color": Color.BROWN},
+	"orc": {"hp": 200.0, "atk": 20.0, "gold": 20.0, "speed": 35.0, "attack_speed": 0.8, "armor": 10.0, "health_regen": 1.0, "color": Color.RED},
+	"demon": {"hp": 500.0, "atk": 50.0, "gold": 50.0, "speed": 45.0, "attack_speed": 0.9, "armor": 18.0, "health_regen": 2.0, "color": Color.PURPLE}
 }
 
 func _ready() -> void:
@@ -45,12 +51,17 @@ func _ready() -> void:
 func setup(type: String, wave_bonus: float = 1.0) -> void:
 	monster_type = type
 	var stats = MONSTER_STATS.get(type, MONSTER_STATS.slime)
-	max_hp = stats.hp * wave_bonus
+	var combat_stats = CombatMathRef.build_monster_stats(stats, wave_bonus)
+	max_hp = combat_stats.max_hp
 	current_hp = max_hp
-	attack_power = stats.atk * wave_bonus
+	attack_power = combat_stats.attack_damage
+	attack_speed = combat_stats.attack_speed
+	armor = combat_stats.armor
+	health_regen = combat_stats.health_regen
 	gold_reward = int(stats.gold * wave_bonus)
 	base_move_speed = stats.speed
 	move_speed = base_move_speed
+	attack_interval = CombatMathRef.get_attack_interval(combat_stats)
 	body.modulate = stats.color
 	is_dead = false
 	death_timer = 0.0
@@ -76,6 +87,8 @@ func _process(delta: float) -> void:
 	var hero = get_node_or_null("../../Hero")
 	if hero == null:
 		return
+
+	apply_regeneration(delta)
 
 	var queue_index = _get_queue_index()
 	global_position.y = hero.global_position.y
@@ -111,6 +124,20 @@ func take_damage(damage: float) -> bool:
 		die()
 		return true
 	return false
+
+func apply_regeneration(delta: float) -> void:
+	current_hp = CombatMathRef.apply_regeneration(current_hp, max_hp, health_regen, delta)
+
+func get_combat_stats() -> Dictionary:
+	return CombatMathRef.create_stat_block({
+		"max_hp": max_hp,
+		"attack_damage": attack_power,
+		"attack_speed": attack_speed,
+		"armor": armor,
+		"health_regen": health_regen,
+		"crit_chance": 0.0,
+		"crit_damage": 150.0
+	})
 
 func die() -> void:
 	is_dead = true
@@ -149,7 +176,9 @@ func _finish_attack(hero_node: Node2D) -> void:
 		return
 	if not is_instance_valid(hero_node):
 		return
-	hero_node.take_damage(attack_power)
+	var resolved_attack = CombatMathRef.resolve_attack(get_combat_stats(), hero_node.get_combat_stats())
+	hero_node.take_damage(resolved_attack.final_damage)
+	emit_signal("attack_hit", hero_node.global_position, resolved_attack.final_damage)
 
 func _on_attack_finished() -> void:
 	is_attacking = false

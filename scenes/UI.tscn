@@ -46,7 +46,7 @@ text = "Wave: 1 | Monsters: 0/10"
 
 [node name="HeroStatsLabel" type="Label" parent="Panel/MarginContainer/Content/StatsContainer"]
 layout_mode = 2
-text = "ATK: 10 | SPD: 1.0 | HP: 100/100"
+text = "ATK: 10 | SPD: 1.0 | ARM: 0 | REG: 0.0 | HP: 100/100"
 
 [node name="UpgradeContainer" type="VBoxContainer" parent="Panel/MarginContainer/Content"]
 layout_mode = 2
@@ -112,6 +112,48 @@ custom_minimum_size = Vector2(96, 64)
 text = "x10"
 
 [node name="HpX100Button" type="Button" parent="Panel/MarginContainer/Content/UpgradeContainer/HpRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(96, 64)
+text = "x100"
+
+[node name="ArmorRow" type="HBoxContainer" parent="Panel/MarginContainer/Content/UpgradeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ArmorButton" type="Button" parent="Panel/MarginContainer/Content/UpgradeContainer/ArmorRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 64)
+text = "Armor Lv.1 Cost: 18"
+
+[node name="ArmorX10Button" type="Button" parent="Panel/MarginContainer/Content/UpgradeContainer/ArmorRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(96, 64)
+text = "x10"
+
+[node name="ArmorX100Button" type="Button" parent="Panel/MarginContainer/Content/UpgradeContainer/ArmorRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(96, 64)
+text = "x100"
+
+[node name="RegenRow" type="HBoxContainer" parent="Panel/MarginContainer/Content/UpgradeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="RegenButton" type="Button" parent="Panel/MarginContainer/Content/UpgradeContainer/RegenRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 64)
+text = "HP Regen Lv.1 Cost: 16"
+
+[node name="RegenX10Button" type="Button" parent="Panel/MarginContainer/Content/UpgradeContainer/RegenRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(96, 64)
+text = "x10"
+
+[node name="RegenX100Button" type="Button" parent="Panel/MarginContainer/Content/UpgradeContainer/RegenRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(96, 64)
 text = "x100"

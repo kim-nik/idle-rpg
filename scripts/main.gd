@@ -1,5 +1,12 @@
 extends Node
 
+const FLOATING_TEXT_SCENE := preload("res://scenes/FloatingText.tscn")
+const DAMAGE_TEXT_OFFSET := Vector2(-18, -72)
+const HERO_DAMAGE_TEXT_OFFSET := Vector2(-18, -96)
+const DAMAGE_TEXT_COLOR := Color(1.0, 0.95, 0.82, 1.0)
+const CRIT_DAMAGE_TEXT_COLOR := Color(1.0, 0.82, 0.24, 1.0)
+const HERO_DAMAGE_TEXT_COLOR := Color(1.0, 0.45, 0.45, 1.0)
+
 @onready var hero: Node2D = $CombatArea/Hero
 @onready var monster_container: Node = $CombatArea/Monsters
 @onready var wave_manager: Node = $WaveManager
@@ -7,6 +14,10 @@ extends Node
 func _ready() -> void:
 	hero.hero_died.connect(_on_hero_died)
 	hero.attack_hit.connect(_on_hero_attack_hit)
+	wave_manager.monster_spawned.connect(_on_monster_spawned)
+
+	for monster in monster_container.get_children():
+		_on_monster_spawned(monster)
 
 func _process(delta: float) -> void:
 	hero.update_attack_cooldown(delta)
@@ -28,18 +39,10 @@ func _attack_nearest_monster() -> void:
 	if nearest_monster:
 		hero.start_attack(nearest_monster)
 
-func _show_crit_effect(pos: Vector2) -> void:
-	var crit_label = Label.new()
-	crit_label.text = "CRIT!"
-	crit_label.global_position = pos + Vector2(0, -50)
-	crit_label.modulate = Color.YELLOW
-	crit_label.add_theme_font_size_override("font_size", 32)
-	add_child(crit_label)
-	
-	var tween = create_tween()
-	tween.tween_property(crit_label, "position:y", pos.y - 100, 0.5)
-	tween.tween_property(crit_label, "modulate:a", 0.0, 0.3)
-	tween.tween_callback(crit_label.queue_free)
+func _spawn_floating_text(text_value: String, world_position: Vector2, color: Color, is_emphasized: bool = false) -> void:
+	var floating_text = FLOATING_TEXT_SCENE.instantiate()
+	add_child(floating_text)
+	floating_text.show_value(text_value, world_position, color, is_emphasized)
 
 func capture_debug_screenshot(file_name: String = "main_debug.png") -> String:
 	var debug_dir = "user://debug"
@@ -99,9 +102,19 @@ func _fill_image_rect(image: Image, rect: Rect2i, color: Color) -> void:
 		for x in range(x_start, x_end):
 			image.set_pixel(x, y, color)
 
-func _on_hero_attack_hit(target_position: Vector2, _damage: float, is_crit: bool) -> void:
-	if is_crit:
-		_show_crit_effect(target_position)
+func _on_hero_attack_hit(target_position: Vector2, damage: float, is_crit: bool) -> void:
+	var color = CRIT_DAMAGE_TEXT_COLOR if is_crit else DAMAGE_TEXT_COLOR
+	var damage_text = str(int(round(damage)))
+	_spawn_floating_text(damage_text, target_position + DAMAGE_TEXT_OFFSET, color, is_crit)
+
+func _on_monster_spawned(monster: Node2D) -> void:
+	var attack_hit_callable := Callable(self, "_on_monster_attack_hit")
+	if monster.has_signal("attack_hit") and not monster.is_connected("attack_hit", attack_hit_callable):
+		monster.connect("attack_hit", attack_hit_callable)
+
+func _on_monster_attack_hit(target_position: Vector2, damage: float) -> void:
+	var damage_text = str(int(round(damage)))
+	_spawn_floating_text(damage_text, target_position + HERO_DAMAGE_TEXT_OFFSET, HERO_DAMAGE_TEXT_COLOR)
 
 func _on_hero_died() -> void:
 	var save_manager = get_node("/root/SaveManager")

@@ -54,11 +54,19 @@ func run(environment) -> Array[String]:
 	var debug_row = environment.main_scene.get_node_or_null(
 		"UIArea/Panel/MarginContainer/Content/UpgradeContainer/DebugGoldRow"
 	) as HBoxContainer
+	var armor_row = environment.main_scene.get_node_or_null(
+		"UIArea/Panel/MarginContainer/Content/UpgradeContainer/ArmorRow"
+	) as HBoxContainer
+	var regen_row = environment.main_scene.get_node_or_null(
+		"UIArea/Panel/MarginContainer/Content/UpgradeContainer/RegenRow"
+	) as HBoxContainer
 	var reset_row = environment.main_scene.get_node_or_null(
 		"UIArea/Panel/MarginContainer/Content/UpgradeContainer/ResetProgressRow"
 	) as HBoxContainer
 
 	_expect(upgrade_container != null, "Upgrade stack is missing", failures)
+	_expect(armor_row != null, "Armor row is missing", failures)
+	_expect(regen_row != null, "Regen row is missing", failures)
 	_expect(debug_row != null, "Debug gold row is missing", failures)
 	_expect(reset_row != null, "Reset progress row is missing", failures)
 

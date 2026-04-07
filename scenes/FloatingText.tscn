@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/floating_text.gd" id="1_floating"]
+
+[node name="FloatingText" type="Label"]
+script = ExtResource("1_floating")
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 28
+text = "0"

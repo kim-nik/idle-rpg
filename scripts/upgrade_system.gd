@@ -1,32 +1,69 @@
 extends Node
 
-const BASE_UPGRADE_COSTS := {
-	"damage": 10,
-	"attack_speed": 15,
-	"max_hp": 12,
-	"crit_chance": 20,
-	"crit_damage": 25
-}
-
-const COST_MULTIPLIERS := {
-	"damage": 1.5,
-	"attack_speed": 1.6,
-	"max_hp": 1.4,
-	"crit_chance": 1.7,
-	"crit_damage": 1.6
-}
-
-const BASE_STATS := {
-	"damage": 10.0,
-	"attack_speed": 1.0,
-	"max_hp": 100.0,
-	"crit_chance": 5.0,
-	"crit_damage": 150.0
+const UPGRADE_CONFIGS := {
+	"damage": {
+		"save_key": "damage_level",
+		"base_cost": 10,
+		"cost_multiplier": 1.5,
+		"base_value": 10.0,
+		"value_type": "multiplier",
+		"value_step": 0.1
+	},
+	"attack_speed": {
+		"save_key": "attack_speed_level",
+		"base_cost": 15,
+		"cost_multiplier": 1.6,
+		"base_value": 1.0,
+		"value_type": "multiplier",
+		"value_step": 0.1
+	},
+	"max_hp": {
+		"save_key": "max_hp_level",
+		"base_cost": 12,
+		"cost_multiplier": 1.4,
+		"base_value": 100.0,
+		"value_type": "flat",
+		"value_step": 20.0
+	},
+	"armor": {
+		"save_key": "armor_level",
+		"base_cost": 18,
+		"cost_multiplier": 1.55,
+		"base_value": 0.0,
+		"value_type": "flat",
+		"value_step": 4.0
+	},
+	"health_regen": {
+		"save_key": "health_regen_level",
+		"base_cost": 16,
+		"cost_multiplier": 1.5,
+		"base_value": 0.0,
+		"value_type": "flat",
+		"value_step": 1.5
+	},
+	"crit_chance": {
+		"save_key": "crit_chance_level",
+		"base_cost": 20,
+		"cost_multiplier": 1.7,
+		"base_value": 5.0,
+		"value_type": "flat",
+		"value_step": 5.0
+	},
+	"crit_damage": {
+		"save_key": "crit_damage_level",
+		"base_cost": 25,
+		"cost_multiplier": 1.6,
+		"base_value": 150.0,
+		"value_type": "flat",
+		"value_step": 25.0
+	}
 }
 
 var damage_level: int = 1
 var attack_speed_level: int = 1
 var max_hp_level: int = 1
+var armor_level: int = 1
+var health_regen_level: int = 1
 var crit_chance_level: int = 1
 var crit_damage_level: int = 1
 
@@ -35,100 +72,93 @@ func _ready() -> void:
 
 func load_from_save() -> void:
 	var save_manager = get_node("/root/SaveManager")
-	damage_level = save_manager.save_data.get("damage_level", 1)
-	attack_speed_level = save_manager.save_data.get("attack_speed_level", 1)
-	max_hp_level = save_manager.save_data.get("max_hp_level", 1)
-	crit_chance_level = save_manager.save_data.get("crit_chance_level", 1)
-	crit_damage_level = save_manager.save_data.get("crit_damage_level", 1)
+	for upgrade_name in UPGRADE_CONFIGS.keys():
+		var config = UPGRADE_CONFIGS[upgrade_name]
+		var save_key = String(config.get("save_key", ""))
+		if not save_key.is_empty():
+			set(save_key, int(save_manager.save_data.get(save_key, 1)))
 
 func get_upgrade_cost(upgrade_name: String, level: int) -> int:
-	var base_cost = BASE_UPGRADE_COSTS.get(upgrade_name, 10)
-	var multiplier = COST_MULTIPLIERS.get(upgrade_name, 1.5)
+	var config = UPGRADE_CONFIGS.get(upgrade_name, {})
+	var base_cost = int(config.get("base_cost", 10))
+	var multiplier = float(config.get("cost_multiplier", 1.5))
 	return int(base_cost * pow(multiplier, level - 1))
 
+func get_upgrade_level(upgrade_name: String) -> int:
+	var config = UPGRADE_CONFIGS.get(upgrade_name, {})
+	var save_key = String(config.get("save_key", ""))
+	if save_key.is_empty():
+		return 1
+	return int(get(save_key))
+
+func get_upgrade_value(upgrade_name: String) -> float:
+	var config = UPGRADE_CONFIGS.get(upgrade_name, {})
+	var base_value = float(config.get("base_value", 0.0))
+	var value_step = float(config.get("value_step", 0.0))
+	var level = get_upgrade_level(upgrade_name)
+	var level_offset = max(level - 1, 0)
+
+	match String(config.get("value_type", "flat")):
+		"multiplier":
+			return base_value * (1.0 + level_offset * value_step)
+		_:
+			return base_value + level_offset * value_step
+
 func get_damage() -> float:
-	return BASE_STATS.damage * (1.0 + (damage_level - 1) * 0.1)
+	return get_upgrade_value("damage")
 
 func get_attack_speed() -> float:
-	return BASE_STATS.attack_speed * (1.0 + (attack_speed_level - 1) * 0.1)
+	return get_upgrade_value("attack_speed")
 
 func get_max_hp() -> float:
-	return BASE_STATS.max_hp + (max_hp_level - 1) * 20.0
+	return get_upgrade_value("max_hp")
+
+func get_armor() -> float:
+	return get_upgrade_value("armor")
+
+func get_health_regen() -> float:
+	return get_upgrade_value("health_regen")
 
 func get_crit_chance() -> float:
-	return BASE_STATS.crit_chance + (crit_chance_level - 1) * 5.0
+	return get_upgrade_value("crit_chance")
 
 func get_crit_damage() -> float:
-	return BASE_STATS.crit_damage + (crit_damage_level - 1) * 25.0
+	return get_upgrade_value("crit_damage")
+
+func get_hero_stats() -> Dictionary:
+	return {
+		"max_hp": get_max_hp(),
+		"attack_damage": get_damage(),
+		"attack_speed": get_attack_speed(),
+		"armor": get_armor(),
+		"health_regen": get_health_regen(),
+		"crit_chance": get_crit_chance(),
+		"crit_damage": get_crit_damage()
+	}
 
 func purchase_upgrade(upgrade_name: String) -> bool:
-	var save_manager = get_node("/root/SaveManager")
-	var current_level: int
-	var cost: int
-	
-	match upgrade_name:
-		"damage":
-			current_level = damage_level
-			cost = get_upgrade_cost("damage", current_level)
-			if save_manager.save_data.gold >= cost:
-				save_manager.save_data.gold -= cost
-				damage_level += 1
-				save_manager.save_data.damage_level = damage_level
-				return true
-		"attack_speed":
-			current_level = attack_speed_level
-			cost = get_upgrade_cost("attack_speed", current_level)
-			if save_manager.save_data.gold >= cost:
-				save_manager.save_data.gold -= cost
-				attack_speed_level += 1
-				save_manager.save_data.attack_speed_level = attack_speed_level
-				return true
-		"max_hp":
-			current_level = max_hp_level
-			cost = get_upgrade_cost("max_hp", current_level)
-			if save_manager.save_data.gold >= cost:
-				save_manager.save_data.gold -= cost
-				max_hp_level += 1
-				save_manager.save_data.max_hp_level = max_hp_level
-				return true
-		"crit_chance":
-			current_level = crit_chance_level
-			cost = get_upgrade_cost("crit_chance", current_level)
-			if save_manager.save_data.gold >= cost:
-				save_manager.save_data.gold -= cost
-				crit_chance_level += 1
-				save_manager.save_data.crit_chance_level = crit_chance_level
-				return true
-		"crit_damage":
-			current_level = crit_damage_level
-			cost = get_upgrade_cost("crit_damage", current_level)
-			if save_manager.save_data.gold >= cost:
-				save_manager.save_data.gold -= cost
-				crit_damage_level += 1
-				save_manager.save_data.crit_damage_level = crit_damage_level
-				return true
-	
-	return false
+	var config = UPGRADE_CONFIGS.get(upgrade_name, {})
+	if config.is_empty():
+		return false
 
-func get_upgrade_level(upgrade_name: String) -> int:
-	match upgrade_name:
-		"damage":
-			return damage_level
-		"attack_speed":
-			return attack_speed_level
-		"max_hp":
-			return max_hp_level
-		"crit_chance":
-			return crit_chance_level
-		"crit_damage":
-			return crit_damage_level
-	return 1
+	var save_manager = get_node("/root/SaveManager")
+	var save_key = String(config.get("save_key", ""))
+	var current_level = int(save_manager.save_data.get(save_key, 1))
+	var cost = get_upgrade_cost(upgrade_name, current_level)
+	if save_manager.save_data.gold < cost:
+		return false
+
+	save_manager.save_data.gold -= cost
+	save_manager.save_data[save_key] = current_level + 1
+	load_from_save()
+	return true
 
 func get_all_upgrades() -> Dictionary:
-	return {
-		"damage": {"level": damage_level, "cost": get_upgrade_cost("damage", damage_level)},
-		"attack_speed": {"level": attack_speed_level, "cost": get_upgrade_cost("attack_speed", attack_speed_level)},
-		"max_hp": {"level": max_hp_level, "cost": get_upgrade_cost("max_hp", max_hp_level)},
-		"crit_chance": {"level": crit_chance_level, "cost": get_upgrade_cost("crit_chance", crit_chance_level)},
-		"crit_damage": {"level": crit_damage_level, "cost": get_upgrade_cost("crit_damage", crit_damage_level)}
-	}
+	var upgrades := {}
+	for upgrade_name in UPGRADE_CONFIGS.keys():
+		var level = get_upgrade_level(upgrade_name)
+		upgrades[upgrade_name] = {
+			"level": level,
+			"cost": get_upgrade_cost(upgrade_name, level)
+		}
+	return upgrades
