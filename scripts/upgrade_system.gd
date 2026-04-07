@@ -110,6 +110,20 @@ func purchase_upgrade(upgrade_name: String) -> bool:
 	
 	return false
 
+func get_upgrade_level(upgrade_name: String) -> int:
+	match upgrade_name:
+		"damage":
+			return damage_level
+		"attack_speed":
+			return attack_speed_level
+		"max_hp":
+			return max_hp_level
+		"crit_chance":
+			return crit_chance_level
+		"crit_damage":
+			return crit_damage_level
+	return 1
+
 func get_all_upgrades() -> Dictionary:
 	return {
 		"damage": {"level": damage_level, "cost": get_upgrade_cost("damage", damage_level)},

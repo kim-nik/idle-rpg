@@ -4,37 +4,29 @@ extends Node
 @onready var monster_container: Node = $CombatArea/Monsters
 @onready var wave_manager: Node = $WaveManager
 
-var attack_cooldown: float = 0.0
-
 func _ready() -> void:
 	hero.hero_died.connect(_on_hero_died)
+	hero.attack_hit.connect(_on_hero_attack_hit)
 
 func _process(delta: float) -> void:
-	attack_cooldown -= delta
-	if attack_cooldown <= 0 and hero.try_attack():
+	hero.update_attack_cooldown(delta)
+	if hero.is_attack_ready():
 		_attack_nearest_monster()
-		attack_cooldown = hero.get_attack_interval()
 
 func _attack_nearest_monster() -> void:
-	var damage_output = hero.get_damage_output()
-	var damage = damage_output.damage
-	var is_crit = damage_output.is_crit
-	
 	var nearest_monster: Node2D = null
-	var min_distance: float = 400.0
-	
+	var min_distance: float = hero.attack_range
+
 	for child in monster_container.get_children():
 		var monster = child as Node2D
 		if monster and not monster.is_dead:
 			var distance = monster.global_position.distance_to(hero.global_position)
-			if distance < min_distance:
+			if distance <= min_distance:
 				min_distance = distance
 				nearest_monster = monster
-	
+
 	if nearest_monster:
-		nearest_monster.take_damage(damage)
-		if is_crit:
-			_show_crit_effect(nearest_monster.global_position)
+		hero.start_attack(nearest_monster)
 
 func _show_crit_effect(pos: Vector2) -> void:
 	var crit_label = Label.new()
@@ -106,6 +98,10 @@ func _fill_image_rect(image: Image, rect: Rect2i, color: Color) -> void:
 	for y in range(y_start, y_end):
 		for x in range(x_start, x_end):
 			image.set_pixel(x, y, color)
+
+func _on_hero_attack_hit(target_position: Vector2, _damage: float, is_crit: bool) -> void:
+	if is_crit:
+		_show_crit_effect(target_position)
 
 func _on_hero_died() -> void:
 	var save_manager = get_node("/root/SaveManager")

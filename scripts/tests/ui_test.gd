@@ -42,6 +42,18 @@ func run(environment) -> Array[String]:
 	_expect(save_manager.save_data.gold == 100, "Debug gold button did not add 100 gold", failures)
 	_expect(ui.gold_label.text == "Gold: 100", "Gold label did not refresh after debug gold", failures)
 	_expect(not ui.damage_btn.disabled, "Damage button stayed disabled after debug gold", failures)
+	ui._add_debug_gold(10)
+	ui._update_ui()
+	_expect(save_manager.save_data.gold == 1100, "Debug x10 did not add 1000 gold", failures)
+	ui._add_debug_gold(100)
+	ui._update_ui()
+	_expect(save_manager.save_data.gold == 11100, "Debug x100 did not add 10000 gold", failures)
+
+	save_manager.save_data.gold = 1000
+	upgrade_system.load_from_save()
+	ui._purchase_upgrade_multiple("damage", 10)
+	_expect(upgrade_system.damage_level > 1, "Damage x10 did not purchase upgrades", failures)
+	_expect(save_manager.save_data.gold < 1000, "Damage x10 did not spend gold", failures)
 
 	save_manager.save_data.gold = 345
 	save_manager.save_data.damage_level = 4
@@ -69,5 +81,9 @@ func run(environment) -> Array[String]:
 	_expect(ui.gold_label.text == "Gold: 0", "Gold label did not refresh after reset", failures)
 	_expect(ui.wave_label.text == "Wave: 1 | Monsters: 0/10", "Wave label did not refresh after reset", failures)
 	_expect(ui.damage_btn.disabled, "Damage button should be disabled again after reset", failures)
+
+	save_manager.save_data.gold = 999
+	ui._reset_progress_multiple(10)
+	_expect(save_manager.save_data.gold == 0, "Reset x10 did not keep baseline state", failures)
 
 	return failures

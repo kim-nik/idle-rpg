@@ -51,30 +51,38 @@ func run(environment) -> Array[String]:
 	var upgrade_container = environment.main_scene.get_node_or_null(
 		"UIArea/Panel/MarginContainer/Content/UpgradeContainer"
 	) as VBoxContainer
-	var debug_button = environment.main_scene.get_node_or_null(
-		"UIArea/Panel/MarginContainer/Content/UpgradeContainer/DebugGoldButton"
-	) as Button
-	var reset_button = environment.main_scene.get_node_or_null(
-		"UIArea/Panel/MarginContainer/Content/UpgradeContainer/ResetProgressButton"
-	) as Button
+	var debug_row = environment.main_scene.get_node_or_null(
+		"UIArea/Panel/MarginContainer/Content/UpgradeContainer/DebugGoldRow"
+	) as HBoxContainer
+	var reset_row = environment.main_scene.get_node_or_null(
+		"UIArea/Panel/MarginContainer/Content/UpgradeContainer/ResetProgressRow"
+	) as HBoxContainer
 
 	_expect(upgrade_container != null, "Upgrade stack is missing", failures)
-	_expect(debug_button != null, "Debug gold button is missing", failures)
-	_expect(reset_button != null, "Reset progress button is missing", failures)
+	_expect(debug_row != null, "Debug gold row is missing", failures)
+	_expect(reset_row != null, "Reset progress row is missing", failures)
 
-	if upgrade_container and debug_button:
-		_expect(debug_button.get_parent() == upgrade_container, "Debug button is outside the upgrade stack", failures)
-	if upgrade_container and reset_button:
-		_expect(reset_button.get_parent() == upgrade_container, "Reset button is outside the upgrade stack", failures)
+	if upgrade_container and debug_row:
+		_expect(debug_row.get_parent() == upgrade_container, "Debug row is outside the upgrade stack", failures)
+	if upgrade_container and reset_row:
+		_expect(reset_row.get_parent() == upgrade_container, "Reset row is outside the upgrade stack", failures)
 
 	if upgrade_container:
 		for child in upgrade_container.get_children():
-			var button = child as Button
-			if button:
-				_expect(
-					button.size_flags_horizontal == Control.SIZE_EXPAND_FILL,
-					"%s does not fill available width" % button.name,
-					failures
-				)
+			var row = child as HBoxContainer
+			_expect(row != null, "%s is not an HBoxContainer row" % child.name, failures)
+			if row == null:
+				continue
+			_expect(row.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "%s row does not fill width" % row.name, failures)
+			_expect(row.get_child_count() == 3, "%s should contain main, x10 and x100 buttons" % row.name, failures)
+			for row_child in row.get_children():
+				var button = row_child as Button
+				_expect(button != null, "%s contains a non-button child" % row.name, failures)
+				if button and button.name.ends_with("Button") and not button.name.contains("X"):
+					_expect(
+						button.size_flags_horizontal == Control.SIZE_EXPAND_FILL,
+						"%s does not fill available width" % button.name,
+						failures
+					)
 
 	return failures

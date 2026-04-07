@@ -10,7 +10,7 @@ var total_monsters_in_wave: int = 10
 var monsters_killed: int = 0
 
 var spawn_timer: float = 0.0
-var spawn_interval: float = 1.0
+var spawn_interval: float = 2.0
 var wave_delay_timer: float = 0.0
 var is_wave_active: bool = false
 var is_between_waves: bool = true
@@ -65,8 +65,9 @@ func spawn_monster() -> void:
 
 	var monster_type = get_monster_type_for_wave(current_wave)
 	monster.setup(monster_type, wave_bonus)
+	if hero:
+		monster.configure_approach(hero.global_position.x)
 	monster.connect("monster_died", _on_monster_died)
-	monster.connect("monster_attacked", _on_monster_attacked)
 	monsters_in_wave += 1
 	emit_signal("monster_spawned", monster)
 
@@ -90,11 +91,6 @@ func _on_monster_died(gold_reward: int) -> void:
 	
 	if monsters_killed >= total_monsters_in_wave:
 		complete_wave()
-
-func _on_monster_attacked(damage: float) -> void:
-	var hero = get_node_or_null("../CombatArea/Hero")
-	if hero:
-		hero.take_damage(damage)
 
 func complete_wave() -> void:
 	is_wave_active = false

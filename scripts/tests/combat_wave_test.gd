@@ -57,11 +57,32 @@ func run(environment) -> Array[String]:
 
 	var hero_hp_before = hero.current_hp
 	monster.attack_hero(hero)
+	await environment.runner.get_tree().create_timer(0.25).timeout
 	_expect(hero.current_hp < hero_hp_before, "Monster attack did not damage the hero", failures)
 
-	hero.base_damage = monster.current_hp + 10.0
-	environment.main_scene._attack_nearest_monster()
+	var second_monster_scene = load("res://scenes/Monster.tscn") as PackedScene
+	var second_monster = second_monster_scene.instantiate()
+	monster_container.add_child(second_monster)
+	second_monster.setup("slime", 1.0)
+	second_monster.position = hero.position + Vector2(260.0, 0.0)
+	monster.position = hero.position + Vector2(monster.attack_range, 0.0)
+	monster.set_process(true)
+	second_monster.set_process(true)
+	monster._process(0.1)
+	second_monster._process(0.1)
+	_expect(
+		second_monster.global_position.x >= monster.global_position.x + monster.QUEUE_SPACING - 2.0,
+		"Second monster did not queue behind the front monster",
+		failures
+	)
+	second_monster.queue_free()
 	await environment.runner.get_tree().process_frame
+	monster.set_process(false)
+
+	hero.base_damage = monster.current_hp + 10.0
+	hero.attack_timer = hero.get_attack_interval()
+	environment.main_scene._attack_nearest_monster()
+	await environment.runner.get_tree().create_timer(0.25).timeout
 
 	_expect(monster.is_dead, "Monster did not die after lethal damage", failures)
 	_expect(save_manager.save_data.gold == monster.gold_reward, "Gold reward was not granted on kill", failures)
