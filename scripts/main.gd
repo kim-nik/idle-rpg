@@ -31,6 +31,7 @@ func _ready() -> void:
 	hero.attack_hit.connect(_on_hero_attack_hit)
 	wave_manager.monster_spawned.connect(_on_monster_spawned)
 	if ability_system:
+		ability_system.load_from_save()
 		if not ability_system.is_connected("ability_triggered", Callable(self, "_on_ability_triggered")):
 			ability_system.ability_triggered.connect(_on_ability_triggered)
 		ability_system.bind_runtime(self, hero, monster_container, wave_manager)
