@@ -1,9 +1,12 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Theme" path="res://resources/upgrade_button_theme.tres" id="1_button_theme"]
 
 [node name="UpgradesTab" type="VBoxContainer"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 16
+theme = ExtResource("1_button_theme")
 
 [node name="UpgradeContainer" type="VBoxContainer" parent="."]
 layout_mode = 2

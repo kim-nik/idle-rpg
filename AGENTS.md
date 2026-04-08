@@ -97,6 +97,17 @@ When generating code, ensure:
 - Fix any test failures or runtime errors found during verification before considering the task complete.
 - If a test cannot be run in the current environment, state this explicitly and explain why.
 
+## Git Workflow Rules
+
+- Do not commit directly to `main`. Always create a short-lived feature branch for any non-trivial change.
+- Keep each commit focused on a single purpose. Do not mix gameplay changes, UI changes, test changes, and documentation updates in one commit unless they are required to deliver one atomic feature.
+- Before creating a commit that changes gameplay, UI, scenes, autoloads, save logic, progression, or `project.godot`, run the headless smoke test and fix failures before committing.
+- If a task completes or changes an item in a plan document such as `docs/STAGE_1_PLAN.md`, update that plan in the same commit as the implementation.
+- Never commit generated or local-only artifacts such as `.godot/`, `export/`, logs, APK/AAB outputs, editor caches, or machine-specific files.
+- Keep Godot text resources reviewable in git. Treat text-based `.tscn`, `.tres`, and `project.godot` files as text so diffs remain readable.
+- Write commit messages in imperative mood and describe the scope and outcome clearly, for example `Add armor upgrade balancing tests`.
+- Review `git diff --staged` before every commit and remove unrelated changes from the commit.
+
 ## Plan Maintenance
 
 - When working from a plan document such as `docs/STAGE_1_PLAN.md`, always mark completed items in that plan as part of the same task.
