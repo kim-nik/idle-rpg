@@ -13,11 +13,11 @@
 
 ## High-Level Roadmap
 
-- [ ] Stage 1. System Foundation
-  - Extend hero and monster stats.
-  - Prepare save format for future systems.
-  - Add damage numbers and improved combat feedback.
-  - Rework bottom menu into tabbed navigation.
+- [x] Stage 1. System Foundation
+  - [x] Extend hero and monster stats.
+  - [x] Prepare save format for future systems.
+  - [x] Add damage numbers and improved combat feedback.
+  - [x] Rework bottom menu into tabbed navigation.
 
 - [ ] Stage 2. Mid-Core Progression
   - Add ability inventory and 8 active ability slots.
@@ -430,14 +430,14 @@
 ## Suggested Milestones
 
 ### Milestone A. Combat Depth
-- Add armor and regeneration.
-- Add reusable damage numbers.
-- Refactor combat calculations into shared stat logic.
+- [x] Add armor and regeneration.
+- [x] Add reusable damage numbers.
+- [x] Refactor combat calculations into shared stat logic.
 
 ### Milestone B. UI Expansion
-- Add bottom tab bar.
-- Move current upgrade panel into a dedicated tab.
-- Add placeholder tabs for abilities and map.
+- [x] Add bottom tab bar.
+- [x] Move current upgrade panel into a dedicated tab.
+- [x] Add placeholder tabs for abilities and map.
 
 ### Milestone C. Structured Progression
 - Add levels with boss waves.
@@ -467,5 +467,5 @@
 - Should story scenes be skippable and replayable from a gallery?
 
 ## Practical Next Step
-- The next implementation document should break Stage 1 into concrete engineering tasks:
-  data structures, scene changes, save migration, UI architecture, and test coverage.
+- Stage 1 implementation is complete and documented in [STAGE_1_PLAN.md](/E:/android_game/docs/STAGE_1_PLAN.md).
+- The next implementation document is [STAGE_2_PLAN.md](/E:/android_game/docs/STAGE_2_PLAN.md), which breaks Stage 2 into concrete engineering tasks for abilities, offline rewards, level progression, save migration, UI, and test coverage.
