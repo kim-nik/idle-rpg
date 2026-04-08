@@ -1,6 +1,7 @@
 extends Node2D
 
 signal attack_hit(target_position: Vector2, damage: float, is_crit: bool)
+signal attack_resolved(target: Node2D, damage_output: Dictionary)
 signal hero_died()
 
 const CombatMathRef = preload("res://scripts/combat_math.gd")
@@ -43,7 +44,11 @@ func _process(delta: float) -> void:
 
 func update_stats() -> void:
 	var upgrade_system = get_node("/root/UpgradeSystem")
-	var stats = CombatMathRef.build_hero_stats(upgrade_system)
+	var ability_system = get_node_or_null("/root/AbilitySystem")
+	var bonus_stats := {}
+	if ability_system:
+		bonus_stats = ability_system.get_passive_bonuses()
+	var stats = CombatMathRef.build_hero_stats(upgrade_system, bonus_stats)
 	max_hp = stats.max_hp
 	base_damage = stats.attack_damage
 	attack_speed = stats.attack_speed
@@ -157,6 +162,7 @@ func _finish_attack_hit(target: Node2D, damage_output: Dictionary) -> void:
 		resolved_attack = get_damage_output(target.get_combat_stats())
 	target.take_damage(resolved_attack.final_damage)
 	emit_signal("attack_hit", target.global_position, resolved_attack.final_damage, resolved_attack.is_crit)
+	emit_signal("attack_resolved", target, resolved_attack)
 
 func _on_attack_finished() -> void:
 	is_attacking = false

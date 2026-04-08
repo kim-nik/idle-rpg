@@ -17,8 +17,8 @@ static func create_stat_block(values: Dictionary = {}) -> Dictionary:
 		stat_block[key] = float(values[key])
 	return stat_block
 
-static func build_hero_stats(upgrade_system: Node) -> Dictionary:
-	return create_stat_block({
+static func build_hero_stats(upgrade_system: Node, bonus_stats: Dictionary = {}) -> Dictionary:
+	var hero_stats = create_stat_block({
 		"max_hp": upgrade_system.get_max_hp(),
 		"attack_damage": upgrade_system.get_damage(),
 		"attack_speed": upgrade_system.get_attack_speed(),
@@ -27,7 +27,9 @@ static func build_hero_stats(upgrade_system: Node) -> Dictionary:
 		"armor": upgrade_system.get_armor(),
 		"health_regen": upgrade_system.get_health_regen()
 	})
-
+	for stat_name in bonus_stats.keys():
+		hero_stats[stat_name] = float(hero_stats.get(stat_name, 0.0)) + float(bonus_stats[stat_name])
+	return hero_stats
 static func build_monster_stats(monster_config: Dictionary, wave_bonus: float = 1.0) -> Dictionary:
 	return create_stat_block({
 		"max_hp": monster_config.get("hp", DEFAULT_STATS.max_hp) * wave_bonus,

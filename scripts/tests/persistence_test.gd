@@ -1,7 +1,7 @@
 extends "res://scripts/tests/test_case.gd"
 
 const EXPECTED_DEFAULT_SAVE := {
-	"version": 2,
+	"version": 4,
 	"gold": 0,
 	"damage_level": 1,
 	"attack_speed_level": 1,
@@ -11,7 +11,9 @@ const EXPECTED_DEFAULT_SAVE := {
 	"crit_chance_level": 1,
 	"crit_damage_level": 1,
 	"wave": 1,
-	"monsters_killed": 0
+	"monsters_killed": 0,
+	"unlocked_ability_ids": ["evil_eye", "leg_sweep", "punch"],
+	"equipped_ability_slots": ["", "", "", "", "", "", "", ""]
 }
 
 func get_name() -> String:
@@ -21,6 +23,7 @@ func run(environment) -> Array[String]:
 	var failures: Array[String] = []
 	var save_manager = environment.save_manager
 	var upgrade_system = environment.upgrade_system
+	var ability_system = environment.ability_system
 
 	environment.reset_progress()
 	_expect(save_manager.save_data == EXPECTED_DEFAULT_SAVE, "Reset did not restore the default save payload", failures)
@@ -36,7 +39,9 @@ func run(environment) -> Array[String]:
 		"crit_chance_level": 2,
 		"crit_damage_level": 3,
 		"wave": 6,
-		"monsters_killed": 9
+		"monsters_killed": 9,
+		"unlocked_ability_ids": ["punch", "leg_sweep", "evil_eye"],
+		"equipped_ability_slots": ["punch", "leg_sweep", "evil_eye", "", "", "", "", ""]
 	}
 	save_manager.save()
 
@@ -45,28 +50,44 @@ func run(environment) -> Array[String]:
 	save_manager.save_data.damage_level = 1
 	save_manager.load_game()
 	upgrade_system.load_from_save()
+	ability_system.load_from_save()
 
 	_expect(save_manager.save_data.gold == 77, "Gold did not survive save/load roundtrip", failures)
 	_expect(save_manager.save_data.wave == 6, "Wave did not survive save/load roundtrip", failures)
 	_expect(save_manager.save_data.damage_level == 3, "Damage level did not survive save/load roundtrip", failures)
 	_expect(save_manager.save_data.armor_level == 5, "Armor level did not survive save/load roundtrip", failures)
 	_expect(save_manager.save_data.health_regen_level == 3, "Health regen level did not survive save/load roundtrip", failures)
+	_expect(save_manager.save_data.unlocked_ability_ids.has("leg_sweep"), "Unlocked abilities did not survive save/load roundtrip", failures)
+	_expect(save_manager.save_data.equipped_ability_slots[1] == "leg_sweep", "Equipped ability slot did not survive save/load", failures)
 	_expect(upgrade_system.damage_level == 3, "Upgrade system did not reload damage level from save", failures)
 	_expect(upgrade_system.max_hp_level == 4, "Upgrade system did not reload max HP level from save", failures)
 	_expect(upgrade_system.armor_level == 5, "Upgrade system did not reload armor level from save", failures)
 	_expect(upgrade_system.health_regen_level == 3, "Upgrade system did not reload health regen level from save", failures)
 	_expect(upgrade_system.crit_damage_level == 3, "Upgrade system did not reload crit damage level from save", failures)
+	_expect(ability_system.is_unlocked("leg_sweep"), "Ability system did not reload unlocked abilities", failures)
+	_expect(ability_system.get_ability_slot(1) == "leg_sweep", "Ability system did not reload equipped slots", failures)
 
 	save_manager.save_data = {"gold": 10}
 	save_manager.save()
 	save_manager.load_game()
-	_expect(save_manager.save_data.version == 2, "Save migration did not stamp the current version", failures)
+	ability_system.load_from_save()
+	_expect(save_manager.save_data.version == 4, "Save migration did not stamp the current version", failures)
 	_expect(save_manager.save_data.damage_level == 1, "Save migration did not restore missing damage level", failures)
 	_expect(save_manager.save_data.armor_level == 1, "Save migration did not restore missing armor level", failures)
 	_expect(save_manager.save_data.health_regen_level == 1, "Save migration did not restore missing regen level", failures)
+	_expect(
+		save_manager.save_data.unlocked_ability_ids == ["evil_eye", "leg_sweep", "punch"],
+		"Save migration did not restore starter abilities",
+		failures
+	)
+	_expect(
+		save_manager.save_data.equipped_ability_slots == ["", "", "", "", "", "", "", ""],
+		"Save migration did not restore empty ability slots",
+		failures
+	)
 
 	save_manager.save_data = {
-		"version": 1,
+		"version": 3,
 		"gold": 25,
 		"damage_level": 2,
 		"attack_speed_level": 2,
@@ -78,8 +99,18 @@ func run(environment) -> Array[String]:
 	}
 	save_manager.save()
 	save_manager.load_game()
-	_expect(save_manager.save_data.version == 2, "Versioned migration did not advance the save version", failures)
+	_expect(save_manager.save_data.version == 4, "Versioned migration did not advance the save version", failures)
 	_expect(save_manager.save_data.armor_level == 1, "Versioned migration did not add armor level", failures)
 	_expect(save_manager.save_data.health_regen_level == 1, "Versioned migration did not add regen level", failures)
+	_expect(
+		save_manager.save_data.unlocked_ability_ids == ["evil_eye", "leg_sweep", "punch"],
+		"Versioned migration did not add starter ability unlocks",
+		failures
+	)
+	_expect(
+		save_manager.save_data.equipped_ability_slots == ["", "", "", "", "", "", "", ""],
+		"Versioned migration did not add empty ability slots",
+		failures
+	)
 
 	return failures

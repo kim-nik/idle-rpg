@@ -5,6 +5,7 @@ const MAIN_SCENE_PATH := "res://scenes/Main.tscn"
 var runner: Node
 var save_manager: Node
 var upgrade_system: Node
+var ability_system: Node
 var main_scene: Node
 var original_save_data: Dictionary = {}
 
@@ -12,11 +13,12 @@ func _init(test_runner: Node) -> void:
 	runner = test_runner
 	save_manager = runner.get_node_or_null("/root/SaveManager")
 	upgrade_system = runner.get_node_or_null("/root/UpgradeSystem")
+	ability_system = runner.get_node_or_null("/root/AbilitySystem")
 	if save_manager:
 		original_save_data = save_manager.save_data.duplicate(true)
 
 func has_autoloads() -> bool:
-	return save_manager != null and upgrade_system != null
+	return save_manager != null and upgrade_system != null and ability_system != null
 
 func reset_progress() -> void:
 	if not has_autoloads():
@@ -24,6 +26,7 @@ func reset_progress() -> void:
 
 	save_manager.reset()
 	upgrade_system.load_from_save()
+	ability_system.load_from_save()
 
 func instantiate_main_scene() -> bool:
 	await clear_main_scene()
@@ -71,6 +74,8 @@ func restore_original_state() -> void:
 
 	if upgrade_system:
 		upgrade_system.load_from_save()
+	if ability_system:
+		ability_system.load_from_save()
 
 func clear_monsters() -> void:
 	var monster_container = get_monster_container()

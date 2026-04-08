@@ -6,10 +6,10 @@
 - Keep implementation staged so each new system can be tested independently before the next one lands.
 
 ## Stage 2 Checklist
-- [ ] Add an ability library with data-driven ability definitions
-- [ ] Add an 8-slot ability loadout system
-- [ ] Ship the first passive and auto-cast abilities
-- [ ] Add ability management UI to the `Abilities` tab
+- [x] Add an ability library with data-driven ability definitions
+- [x] Add an 8-slot ability loadout system
+- [x] Ship the first passive and auto-cast abilities
+- [x] Add ability management UI to the `Abilities` tab
 - [ ] Add offline gold accumulation with claim flow
 - [ ] Extend progression from raw waves into level and boss structure
 - [ ] Add map progression UI for current level, cleared levels, and boss milestones
@@ -19,45 +19,45 @@
 ## Implementation Plan
 
 ### 1. Ability Data Model
-- [ ] Define a shared ability definition format:
+- [x] Define a shared ability definition format:
   id, name, description, icon, trigger type, cooldown, target rule, and scaling data
-- [ ] Store ability definitions in data-driven resources or dictionaries rather than hardcoding behavior in `hero.gd`
-- [ ] Separate unlocked state, equipped state, cooldown state, and effect logic
-- [ ] Reserve room for future manual abilities without requiring a rewrite of passive and auto abilities
-- [ ] Decide and document the initial trigger set:
+- [x] Store ability definitions in data-driven resources or dictionaries rather than hardcoding behavior in `hero.gd`
+- [x] Separate unlocked state, equipped state, cooldown state, and effect logic
+- [x] Reserve room for future manual abilities without requiring a rewrite of passive and auto abilities
+- [x] Decide and document the initial trigger set:
   passive, periodic auto-cast, on-hit, on-kill, on-low-hp
 
 ### 2. Ability Runtime System
-- [ ] Add a dedicated ability system that owns ability evaluation and execution
-- [ ] Ensure combat scripts ask the ability system for modifiers instead of embedding one-off checks
-- [ ] Support passive stat modifiers that apply cleanly through the shared combat/stat pipeline
-- [ ] Support non-manual triggered abilities on a predictable update cadence
-- [ ] Add clear hooks for future combat events:
+- [x] Add a dedicated ability system that owns ability evaluation and execution
+- [x] Ensure combat scripts ask the ability system for modifiers instead of embedding one-off checks
+- [x] Support passive stat modifiers that apply cleanly through the shared combat/stat pipeline
+- [x] Support non-manual triggered abilities on a predictable update cadence
+- [x] Add clear hooks for future combat events:
   hit dealt, hit taken, crit dealt, kill, wave start, and boss start
 
 ### 3. Ability Unlocks and Loadout
-- [ ] Add save-backed unlocked ability collection
-- [ ] Add 8 persistent ability slots
-- [ ] Define slot behavior for Stage 2:
+- [x] Add save-backed unlocked ability collection
+- [x] Add 8 persistent ability slots
+- [x] Define slot behavior for Stage 2:
   all 8 slots are shared loadout slots unless design changes later
-- [ ] Prevent invalid equip states and duplicate assignment rules according to the chosen design
-- [ ] Add equip, unequip, and swap operations that are safe to call from UI and tests
+- [x] Prevent invalid equip states and duplicate assignment rules according to the chosen design
+- [x] Add equip, unequip, and swap operations that are safe to call from UI and tests
 
 ### 4. First Ability Content Pass
-- [ ] Implement a small starter set of abilities that prove the framework
-- [ ] Include at least one passive stat booster
-- [ ] Include at least one periodic auto-cast effect
-- [ ] Include at least one reactive trigger ability
-- [ ] Keep the first batch simple enough to balance with the current combat presentation
-- [ ] Validate that abilities interact correctly with armor, regen, crit, and future boss waves
+- [x] Implement a small starter set of abilities that prove the framework
+- [x] Include at least one passive stat booster
+- [x] Include at least one periodic auto-cast effect
+- [x] Include at least one reactive trigger ability
+- [x] Keep the first batch simple enough to balance with the current combat presentation
+- [x] Validate that abilities interact correctly with armor, regen, crit, and future boss waves
 
 ### 5. Abilities Tab UI
-- [ ] Replace the placeholder `Abilities` tab with a real management screen
-- [ ] Show unlocked abilities in a scrollable library/list
-- [ ] Show 8 equipped slots in a mobile-friendly layout
-- [ ] Add a details panel or summary area with description, trigger type, and key stats
-- [ ] Support equip and unequip without deep modal chains
-- [ ] Keep combat visible and avoid shrinking the active gameplay area too aggressively
+- [x] Replace the placeholder `Abilities` tab with a real management screen
+- [x] Show unlocked abilities in a scrollable library/list
+- [x] Show 8 equipped slots in a mobile-friendly layout
+- [x] Add a details panel or summary area with description, trigger type, and key stats
+- [x] Support equip and unequip without deep modal chains
+- [x] Keep combat visible and avoid shrinking the active gameplay area too aggressively
 
 ### 6. Offline Gold Model
 - [ ] Add last-active timestamp and offline reward bookkeeping to save data
@@ -107,13 +107,13 @@
 - [ ] Document any intentionally non-persistent runtime values such as temporary cooldowns
 
 ### 12. Testing
-- [ ] Add unit/system coverage for ability unlock, equip, and trigger behavior
-- [ ] Add tests for passive modifiers affecting hero stats through the shared combat pipeline
+- [x] Add unit/system coverage for ability unlock, equip, and trigger behavior
+- [x] Add tests for passive modifiers affecting hero stats through the shared combat pipeline
 - [ ] Add tests for offline reward calculation, cap behavior, and one-time claim flow
 - [ ] Add tests for level progression and boss-gated unlock flow
 - [ ] Add UI smoke coverage for the populated `Abilities` and `Map` tabs
-- [ ] Register new automated tests in `scripts/smoke_test.gd`
-- [ ] Re-run the headless smoke test after each milestone that touches gameplay, scenes, saves, or autoloads
+- [x] Register new automated tests in `scripts/smoke_test.gd`
+- [x] Re-run the headless smoke test after each milestone that touches gameplay, scenes, saves, or autoloads
 
 ## Recommended Delivery Order
 1. Save-data extension and migration scaffolding

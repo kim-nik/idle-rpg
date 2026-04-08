@@ -1,7 +1,7 @@
 extends Node
 
 const SAVE_FILE := "user://save.dat"
-const SAVE_VERSION := 2
+const SAVE_VERSION := 4
 const DEFAULT_SAVE_DATA := {
 	"version": SAVE_VERSION,
 	"gold": 0,
@@ -13,7 +13,9 @@ const DEFAULT_SAVE_DATA := {
 	"crit_chance_level": 1,
 	"crit_damage_level": 1,
 	"wave": 1,
-	"monsters_killed": 0
+	"monsters_killed": 0,
+	"unlocked_ability_ids": ["evil_eye", "leg_sweep", "punch"],
+	"equipped_ability_slots": ["", "", "", "", "", "", "", ""]
 }
 
 var save_data := DEFAULT_SAVE_DATA.duplicate(true)
@@ -52,6 +54,12 @@ func _migrate_save_data(loaded_data: Dictionary) -> Dictionary:
 		source_version = 1
 	if source_version < 2:
 		working_data = _migrate_to_v2(working_data)
+		source_version = 2
+	if source_version < 3:
+		working_data = _migrate_to_v3(working_data)
+		source_version = 3
+	if source_version < 4:
+		working_data = _migrate_to_v4(working_data)
 
 	return _merge_with_defaults(working_data)
 
@@ -67,6 +75,23 @@ func _migrate_to_v2(loaded_data: Dictionary) -> Dictionary:
 	if not migrated_data.has("health_regen_level"):
 		migrated_data.health_regen_level = 1
 	migrated_data.version = 2
+	return migrated_data
+
+func _migrate_to_v3(loaded_data: Dictionary) -> Dictionary:
+	var migrated_data := loaded_data.duplicate(true)
+	if not migrated_data.has("unlocked_ability_ids"):
+		migrated_data.unlocked_ability_ids = ["punch", "leg_sweep", "evil_eye"]
+	if not migrated_data.has("equipped_ability_slots"):
+		migrated_data.equipped_ability_slots = ["", "", "", "", "", "", "", ""]
+	migrated_data.version = 3
+	return migrated_data
+
+func _migrate_to_v4(loaded_data: Dictionary) -> Dictionary:
+	var migrated_data := loaded_data.duplicate(true)
+	migrated_data.unlocked_ability_ids = ["punch", "leg_sweep", "evil_eye"]
+	if not migrated_data.has("equipped_ability_slots"):
+		migrated_data.equipped_ability_slots = ["", "", "", "", "", "", "", ""]
+	migrated_data.version = 4
 	return migrated_data
 
 func _merge_with_defaults(loaded_data: Dictionary) -> Dictionary:

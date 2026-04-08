@@ -1,0 +1,72 @@
+extends "res://scripts/tests/test_case.gd"
+
+func get_name() -> String:
+	return "ability system"
+
+func run(environment) -> Array[String]:
+	var failures: Array[String] = []
+
+	environment.reset_progress()
+	var main_scene_loaded: bool = await environment.instantiate_main_scene()
+	_expect(main_scene_loaded, "Main scene failed to instantiate", failures)
+	if not main_scene_loaded:
+		return failures
+
+	environment.stabilize_main_scene()
+
+	var hero = environment.get_hero()
+	var monster_container = environment.get_monster_container()
+	var wave_manager = environment.get_wave_manager()
+	var ability_system = environment.ability_system
+
+	_expect(hero != null, "Hero instance is unavailable", failures)
+	_expect(ability_system != null, "Ability system autoload is unavailable", failures)
+	if hero == null or ability_system == null:
+		return failures
+
+	_expect(ability_system.is_unlocked("punch"), "Punch should be unlocked by default", failures)
+	_expect(ability_system.is_unlocked("leg_sweep"), "Leg Sweep should be unlocked by default", failures)
+	_expect(ability_system.is_unlocked("evil_eye"), "Evil Eye should be unlocked by default", failures)
+
+	_expect(ability_system.equip_ability(0, "punch"), "Punch failed to equip", failures)
+	_expect(ability_system.equip_ability(1, "leg_sweep"), "Leg Sweep failed to equip", failures)
+	_expect(ability_system.equip_ability(2, "evil_eye"), "Evil Eye failed to equip", failures)
+	_expect(ability_system.get_ability_slot(0) == "punch", "Punch was not stored in slot 1", failures)
+	_expect(ability_system.get_ability_slot(1) == "leg_sweep", "Leg Sweep was not stored in slot 2", failures)
+	_expect(ability_system.get_ability_slot(2) == "evil_eye", "Evil Eye was not stored in slot 3", failures)
+
+	var monster_scene := load("res://scenes/Monster.tscn") as PackedScene
+	var monsters: Array = []
+	for index in range(4):
+		var monster = monster_scene.instantiate()
+		monster_container.add_child(monster)
+		monster.position = Vector2(280 + index * 60, 480)
+		monster.setup("slime", 1.0)
+		monsters.append(monster)
+	await environment.runner.get_tree().process_frame
+
+	ability_system.bind_runtime(environment.main_scene, hero, monster_container, wave_manager)
+
+	var hp_before_punch = monsters[0].current_hp
+	ability_system.advance_runtime(4.1)
+	_expect(monsters[0].current_hp < hp_before_punch, "Punch did not hit the nearest enemy", failures)
+
+	var hp_before_sweep := []
+	for monster in monsters:
+		hp_before_sweep.append(monster.current_hp)
+	ability_system.advance_runtime(4.0)
+	_expect(monsters[0].current_hp < hp_before_sweep[0], "Leg Sweep did not affect the first enemy", failures)
+	_expect(monsters[1].current_hp < hp_before_sweep[1], "Leg Sweep did not affect the second enemy", failures)
+	_expect(monsters[2].current_hp < hp_before_sweep[2], "Leg Sweep did not affect the third enemy", failures)
+	_expect(is_equal_approx(monsters[3].current_hp, hp_before_sweep[3]), "Leg Sweep should not affect the fourth enemy", failures)
+
+	var hp_before_eye = monsters[3].current_hp
+	ability_system.advance_runtime(0.1)
+	_expect(monsters[3].current_hp < hp_before_eye, "Evil Eye did not target the fourth enemy", failures)
+
+	_expect(ability_system.clear_slot(2), "Clearing Evil Eye slot failed", failures)
+	var hp_before_cleared_eye = monsters[3].current_hp
+	ability_system.advance_runtime(2.1)
+	_expect(is_equal_approx(monsters[3].current_hp, hp_before_cleared_eye), "Cleared ability slot still triggered", failures)
+
+	return failures

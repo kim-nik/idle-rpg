@@ -8,6 +8,7 @@ const COMBAT_TEXT_STYLES := {
 	"damage": {"color": Color(1.0, 0.95, 0.82, 1.0), "emphasized": false},
 	"crit": {"color": Color(1.0, 0.82, 0.24, 1.0), "emphasized": true},
 	"hero_damage": {"color": Color(1.0, 0.45, 0.45, 1.0), "emphasized": false},
+	"ability": {"color": Color(0.48, 0.86, 1.0, 1.0), "emphasized": true},
 	"heal": {"color": Color(0.45, 1.0, 0.55, 1.0), "emphasized": false},
 	"dodge": {"color": Color(0.72, 0.92, 1.0, 1.0), "emphasized": true},
 	"block": {"color": Color(0.7, 0.8, 1.0, 1.0), "emphasized": true},
@@ -17,6 +18,7 @@ const COMBAT_TEXT_STYLES := {
 @onready var hero: Node2D = $CombatArea/Hero
 @onready var monster_container: Node = $CombatArea/Monsters
 @onready var wave_manager: Node = $WaveManager
+@onready var ability_system: Node = get_node("/root/AbilitySystem")
 
 var floating_texts: Array[Label] = []
 
@@ -24,6 +26,10 @@ func _ready() -> void:
 	hero.hero_died.connect(_on_hero_died)
 	hero.attack_hit.connect(_on_hero_attack_hit)
 	wave_manager.monster_spawned.connect(_on_monster_spawned)
+	if ability_system:
+		if not ability_system.is_connected("ability_triggered", Callable(self, "_on_ability_triggered")):
+			ability_system.ability_triggered.connect(_on_ability_triggered)
+		ability_system.bind_runtime(self, hero, monster_container, wave_manager)
 
 	for monster in monster_container.get_children():
 		_on_monster_spawned(monster)
@@ -55,6 +61,9 @@ func _spawn_floating_text(text_value: String, world_position: Vector2, style_nam
 		add_child(floating_text)
 	floating_text.show_value(text_value, world_position, style.color, style.emphasized)
 	floating_text.move_to_front()
+
+func show_combat_text(text_value: String, world_position: Vector2, style_name: String) -> void:
+	_spawn_floating_text(text_value, world_position, style_name)
 
 func _get_floating_text_node() -> Label:
 	if floating_texts.size() < MAX_ACTIVE_FLOATING_TEXTS:
@@ -142,3 +151,6 @@ func _on_hero_died() -> void:
 	save_manager.reset()
 	await get_tree().create_timer(2.0).timeout
 	get_tree().reload_current_scene()
+
+func _on_ability_triggered(_ability_id: String, position: Vector2, text_value: String, style_name: String) -> void:
+	show_combat_text(text_value, position + DAMAGE_TEXT_OFFSET, style_name)
