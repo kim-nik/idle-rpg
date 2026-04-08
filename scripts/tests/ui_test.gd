@@ -26,10 +26,31 @@ func run(environment) -> Array[String]:
 
 	ui._update_ui()
 	_expect(ui.gold_label.text == "Gold: 0", "Gold label did not show the baseline state", failures)
-	_expect(ui.wave_label.text == "Wave: 1 | Monsters: 0/10", "Wave label did not show baseline progress", failures)
+	_expect(ui.top_wave_label.text == "Wave 1", "Top wave label did not show the baseline wave", failures)
+	_expect(ui.wave_label.text == "Monsters: 0/10", "Monster progress label did not show baseline progress", failures)
+	_expect(ui.active_tab == ui.TAB_UPGRADES, "Upgrades tab should be active by default", failures)
 	_expect(ui.damage_btn.disabled, "Damage button should be disabled without gold", failures)
 	_expect(ui.armor_btn.disabled, "Armor button should be disabled without gold", failures)
 	_expect(ui.regen_btn.disabled, "Regen button should be disabled without gold", failures)
+	_expect(ui.upgrades_scroll.visible, "Upgrades scroll should be visible by default", failures)
+	_expect(not ui.abilities_scroll.visible, "Abilities scroll should be hidden by default", failures)
+	_expect(not ui.map_scroll.visible, "Map scroll should be hidden by default", failures)
+	_expect(ui._is_quick_tap(120, 8.0), "Quick tap heuristic should accept a short tap", failures)
+	_expect(not ui._is_quick_tap(250, 8.0), "Quick tap heuristic should reject long holds", failures)
+	_expect(not ui._is_quick_tap(120, 30.0), "Quick tap heuristic should reject drags", failures)
+	_expect(ui._should_start_scroll(250, 0.0), "Scroll heuristic should accept long holds", failures)
+	_expect(ui._should_start_scroll(50, 30.0), "Scroll heuristic should accept drags", failures)
+
+	ui.set_active_tab(ui.TAB_ABILITIES)
+	_expect(ui.active_tab == ui.TAB_ABILITIES, "Abilities tab did not become active", failures)
+	_expect(not ui.upgrades_scroll.visible, "Upgrades scroll should be hidden on abilities tab", failures)
+	_expect(ui.abilities_scroll.visible, "Abilities scroll should be visible on abilities tab", failures)
+
+	ui.set_active_tab(ui.TAB_MAP)
+	_expect(ui.active_tab == ui.TAB_MAP, "Map tab did not become active", failures)
+	_expect(ui.map_scroll.visible, "Map scroll should be visible on map tab", failures)
+
+	ui.set_active_tab(ui.TAB_UPGRADES)
 
 	if environment.main_scene.has_method("capture_debug_screenshot"):
 		var screenshot_path = await environment.main_scene.capture_debug_screenshot("smoke_test.png")
@@ -92,7 +113,8 @@ func run(environment) -> Array[String]:
 	_expect(save_manager.save_data.monsters_killed == 0, "Reset did not clear monster kills", failures)
 	_expect(hero.current_hp == hero.max_hp, "Hero health was not restored after reset", failures)
 	_expect(ui.gold_label.text == "Gold: 0", "Gold label did not refresh after reset", failures)
-	_expect(ui.wave_label.text == "Wave: 1 | Monsters: 0/10", "Wave label did not refresh after reset", failures)
+	_expect(ui.top_wave_label.text == "Wave 1", "Top wave label did not refresh after reset", failures)
+	_expect(ui.wave_label.text == "Monsters: 0/10", "Monster progress label did not refresh after reset", failures)
 	_expect(ui.damage_btn.disabled, "Damage button should be disabled again after reset", failures)
 
 	save_manager.save_data.gold = 999

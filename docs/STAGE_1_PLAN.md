@@ -8,12 +8,12 @@
 - [x] Introduce a shared stat model for hero and monsters
 - [x] Add armor to combat calculations
 - [x] Add health regeneration
-- [ ] Prepare save-data migration for new systems
+- [x] Prepare save-data migration for new systems
 - [x] Add reusable floating damage numbers
 - [x] Expand combat feedback rules for crit, heal, and future dodge/block events
-- [ ] Rework the lower panel into a tab-based UI shell
-- [ ] Move the current upgrade screen into the new `Upgrades` tab
-- [ ] Add placeholder `Abilities` and `Map` tabs
+- [x] Rework the lower panel into a tab-based UI shell
+- [x] Move the current upgrade screen into the new `Upgrades` tab
+- [x] Add placeholder `Abilities` and `Map` tabs
 - [x] Add smoke-test coverage for the new combat/UI foundation
 
 ## Implementation Plan
@@ -40,10 +40,10 @@
 - [x] Add tests for regen behavior in and out of combat as designed
 
 ### 4. Save Preparation
-- [ ] Add version field to save data if missing
-- [ ] Add migration path for future fields
-- [ ] Store defaults safely when loading older saves
-- [ ] Verify old saves still load without crashes
+- [x] Add version field to save data if missing
+- [x] Add migration path for future fields
+- [x] Store defaults safely when loading older saves
+- [x] Verify old saves still load without crashes
 
 ### 5. Floating Damage Numbers
 - [x] Create a reusable floating text scene
@@ -54,24 +54,24 @@
 
 ### 6. Combat Feedback Rules
 - [x] Standardize colors/styles for normal hit, crit, and healing
-- [ ] Reserve styles for future `Dodge`, `Block`, and `Resist` events
-- [ ] Avoid spawning excessive temporary nodes in dense combat
+- [x] Reserve styles for future `Dodge`, `Block`, and `Resist` events
+- [x] Avoid spawning excessive temporary nodes in dense combat
 
 ### 7. Tabbed Bottom Menu
-- [ ] Create a persistent bottom tab bar
-- [ ] Split content area from tab navigation
-- [ ] Add `Upgrades` tab content scene
-- [ ] Add placeholder `Abilities` tab content scene
-- [ ] Add placeholder `Map` tab content scene
-- [ ] Keep combat area visible while switching tabs
+- [x] Create a persistent bottom tab bar
+- [x] Split content area from tab navigation
+- [x] Add `Upgrades` tab content scene
+- [x] Add placeholder `Abilities` tab content scene
+- [x] Add placeholder `Map` tab content scene
+- [x] Keep combat area visible while switching tabs
 
 ### 8. UI Refactor Safety
-- [ ] Minimize direct node-path coupling between systems and UI tabs
-- [ ] Route shared state through gameplay systems/autoloads
-- [ ] Keep tab scenes modular so future tabs can be added without rewriting the shell
+- [x] Minimize direct node-path coupling between systems and UI tabs
+- [x] Route shared state through gameplay systems/autoloads
+- [x] Keep tab scenes modular so future tabs can be added without rewriting the shell
 
 ### 9. Testing
-- [ ] Update smoke tests for the tab shell
+- [x] Update smoke tests for the tab shell
 - [x] Add tests for damage-number scene creation where practical
 - [x] Re-run the headless smoke test after each combat/UI milestone
 

@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[node name="MapTab" type="VBoxContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 2
+text = "Map"
+
+[node name="DescriptionLabel" type="Label" parent="."]
+layout_mode = 2
+autowrap_mode = 3
+text = "This tab will show level progression, boss milestones, and regional unlocks. It is a placeholder shell for the upcoming map system."
+
+[node name="MilestoneLabel" type="Label" parent="."]
+layout_mode = 2
+autowrap_mode = 3
+text = "Planned: current level, cleared nodes, boss status, unlock rewards, and transitions into future regions."
+
+[node name="BottomSpacer" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 320)
+layout_mode = 2

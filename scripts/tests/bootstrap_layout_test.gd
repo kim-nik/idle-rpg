@@ -29,6 +29,18 @@ func run(environment) -> Array[String]:
 	var combat_background = environment.main_scene.get_node_or_null("ArenaBackground") as ColorRect
 	var divider = environment.main_scene.get_node_or_null("ArenaDivider") as ColorRect
 	var panel = environment.main_scene.get_node_or_null("UIArea/Panel") as Panel
+	var top_wave_banner = environment.main_scene.get_node_or_null("UIArea/TopWaveBanner") as Panel
+	var top_wave_label = environment.main_scene.get_node_or_null("UIArea/TopWaveBanner/TopWaveLabel") as Label
+	var tab_bar = environment.main_scene.get_node_or_null("UIArea/Panel/MarginContainer/Content/TabBar") as HBoxContainer
+	var upgrades_scroll = environment.main_scene.get_node_or_null(
+		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/UpgradesScroll"
+	) as ScrollContainer
+	var abilities_scroll = environment.main_scene.get_node_or_null(
+		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/AbilitiesScroll"
+	) as ScrollContainer
+	var map_scroll = environment.main_scene.get_node_or_null(
+		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/MapScroll"
+	) as ScrollContainer
 	var viewport_width = int(ProjectSettings.get_setting("display/window/size/viewport_width", 0))
 	var viewport_height = int(ProjectSettings.get_setting("display/window/size/viewport_height", 0))
 	var orientation = int(ProjectSettings.get_setting("display/window/handheld/orientation", -1))
@@ -39,6 +51,12 @@ func run(environment) -> Array[String]:
 	_expect(combat_background != null, "Arena background node is missing", failures)
 	_expect(divider != null, "Arena divider node is missing", failures)
 	_expect(panel != null, "UI panel node is missing", failures)
+	_expect(top_wave_banner != null, "Top wave banner is missing", failures)
+	_expect(top_wave_label != null, "Top wave label is missing", failures)
+	_expect(tab_bar != null, "Tab bar is missing", failures)
+	_expect(upgrades_scroll != null, "Upgrades scroll container is missing", failures)
+	_expect(abilities_scroll != null, "Abilities scroll container is missing", failures)
+	_expect(map_scroll != null, "Map scroll container is missing", failures)
 
 	if combat_background:
 		_expect(is_equal_approx(combat_background.size.y, 960.0), "Combat area is not half-screen height", failures)
@@ -47,21 +65,23 @@ func run(environment) -> Array[String]:
 	if panel:
 		_expect(is_equal_approx(panel.position.y, 960.0), "UI panel does not start at half-screen", failures)
 		_expect(is_equal_approx(panel.size.y, 960.0), "UI panel does not fill the bottom half", failures)
+	if top_wave_banner:
+		_expect(top_wave_banner.position.y < 120.0, "Top wave banner should remain near the top of the screen", failures)
 
 	var upgrade_container = environment.main_scene.get_node_or_null(
-		"UIArea/Panel/MarginContainer/Content/UpgradeContainer"
+		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/UpgradesScroll/UpgradesTab/UpgradeContainer"
 	) as VBoxContainer
 	var debug_row = environment.main_scene.get_node_or_null(
-		"UIArea/Panel/MarginContainer/Content/UpgradeContainer/DebugGoldRow"
+		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/UpgradesScroll/UpgradesTab/UpgradeContainer/DebugGoldRow"
 	) as HBoxContainer
 	var armor_row = environment.main_scene.get_node_or_null(
-		"UIArea/Panel/MarginContainer/Content/UpgradeContainer/ArmorRow"
+		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/UpgradesScroll/UpgradesTab/UpgradeContainer/ArmorRow"
 	) as HBoxContainer
 	var regen_row = environment.main_scene.get_node_or_null(
-		"UIArea/Panel/MarginContainer/Content/UpgradeContainer/RegenRow"
+		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/UpgradesScroll/UpgradesTab/UpgradeContainer/RegenRow"
 	) as HBoxContainer
 	var reset_row = environment.main_scene.get_node_or_null(
-		"UIArea/Panel/MarginContainer/Content/UpgradeContainer/ResetProgressRow"
+		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/UpgradesScroll/UpgradesTab/UpgradeContainer/ResetProgressRow"
 	) as HBoxContainer
 
 	_expect(upgrade_container != null, "Upgrade stack is missing", failures)
@@ -69,6 +89,10 @@ func run(environment) -> Array[String]:
 	_expect(regen_row != null, "Regen row is missing", failures)
 	_expect(debug_row != null, "Debug gold row is missing", failures)
 	_expect(reset_row != null, "Reset progress row is missing", failures)
+	if upgrades_scroll:
+		_expect(not upgrades_scroll.horizontal_scroll_mode, "Upgrades tab should not scroll horizontally", failures)
+	if tab_bar:
+		_expect(tab_bar.get_child_count() == 3, "Tab bar should contain three buttons", failures)
 
 	if upgrade_container and debug_row:
 		_expect(debug_row.get_parent() == upgrade_container, "Debug row is outside the upgrade stack", failures)
@@ -92,5 +116,6 @@ func run(environment) -> Array[String]:
 						"%s does not fill available width" % button.name,
 						failures
 					)
+					_expect(button.custom_minimum_size.y >= 88.0, "%s should use taller upgrade cards" % button.name, failures)
 
 	return failures

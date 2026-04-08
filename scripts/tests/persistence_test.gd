@@ -65,4 +65,21 @@ func run(environment) -> Array[String]:
 	_expect(save_manager.save_data.armor_level == 1, "Save migration did not restore missing armor level", failures)
 	_expect(save_manager.save_data.health_regen_level == 1, "Save migration did not restore missing regen level", failures)
 
+	save_manager.save_data = {
+		"version": 1,
+		"gold": 25,
+		"damage_level": 2,
+		"attack_speed_level": 2,
+		"max_hp_level": 2,
+		"crit_chance_level": 2,
+		"crit_damage_level": 2,
+		"wave": 3,
+		"monsters_killed": 4
+	}
+	save_manager.save()
+	save_manager.load_game()
+	_expect(save_manager.save_data.version == 2, "Versioned migration did not advance the save version", failures)
+	_expect(save_manager.save_data.armor_level == 1, "Versioned migration did not add armor level", failures)
+	_expect(save_manager.save_data.health_regen_level == 1, "Versioned migration did not add regen level", failures)
+
 	return failures

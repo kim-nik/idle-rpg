@@ -41,14 +41,14 @@ func run(environment) -> Array[String]:
 	_expect(is_equal_approx(hero.current_hp, 58.0), "Hero regeneration helper did not restore HP", failures)
 
 	var floating_before = main_scene.get_children().filter(func(child): return child.name == "FloatingText").size()
-	main_scene._spawn_floating_text("42", Vector2(320, 320), Color.WHITE, true)
+	main_scene._spawn_floating_text("42", Vector2(320, 320), "crit")
 	await environment.runner.get_tree().process_frame
 
 	var floating_text = main_scene.get_node_or_null("FloatingText") as Label
 	_expect(floating_text != null, "Floating damage text node was not spawned", failures)
 	if floating_text:
 		_expect(floating_text.text == "42", "Floating damage text did not preserve the provided value", failures)
-		_expect(floating_text.modulate == Color.WHITE, "Floating damage text color is incorrect", failures)
+		_expect(floating_text.modulate == Color(1.0, 0.82, 0.24, 1.0), "Floating damage text color is incorrect", failures)
 
 	var floating_after = main_scene.get_children().filter(func(child): return child.name == "FloatingText").size()
 	_expect(floating_after == floating_before + 1, "Floating damage text count did not increase", failures)

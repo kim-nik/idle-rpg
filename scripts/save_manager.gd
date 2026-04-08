@@ -38,10 +38,36 @@ func load_game() -> void:
 			if json.parse(json_string) == OK:
 				var loaded_data = json.get_data()
 				if loaded_data is Dictionary:
-					save_data = _merge_with_defaults(loaded_data)
+					save_data = _migrate_save_data(loaded_data)
 			file.close()
 	else:
 		save_data = DEFAULT_SAVE_DATA.duplicate(true)
+
+func _migrate_save_data(loaded_data: Dictionary) -> Dictionary:
+	var working_data := loaded_data.duplicate(true)
+	var source_version = int(working_data.get("version", 0))
+
+	if source_version < 1:
+		working_data = _migrate_to_v1(working_data)
+		source_version = 1
+	if source_version < 2:
+		working_data = _migrate_to_v2(working_data)
+
+	return _merge_with_defaults(working_data)
+
+func _migrate_to_v1(loaded_data: Dictionary) -> Dictionary:
+	var migrated_data := loaded_data.duplicate(true)
+	migrated_data.version = 1
+	return migrated_data
+
+func _migrate_to_v2(loaded_data: Dictionary) -> Dictionary:
+	var migrated_data := loaded_data.duplicate(true)
+	if not migrated_data.has("armor_level"):
+		migrated_data.armor_level = 1
+	if not migrated_data.has("health_regen_level"):
+		migrated_data.health_regen_level = 1
+	migrated_data.version = 2
+	return migrated_data
 
 func _merge_with_defaults(loaded_data: Dictionary) -> Dictionary:
 	var merged_data := DEFAULT_SAVE_DATA.duplicate(true)

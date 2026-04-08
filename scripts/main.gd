@@ -1,15 +1,24 @@
 extends Node
 
 const FLOATING_TEXT_SCENE := preload("res://scenes/FloatingText.tscn")
+const MAX_ACTIVE_FLOATING_TEXTS := 12
 const DAMAGE_TEXT_OFFSET := Vector2(-18, -72)
 const HERO_DAMAGE_TEXT_OFFSET := Vector2(-18, -96)
-const DAMAGE_TEXT_COLOR := Color(1.0, 0.95, 0.82, 1.0)
-const CRIT_DAMAGE_TEXT_COLOR := Color(1.0, 0.82, 0.24, 1.0)
-const HERO_DAMAGE_TEXT_COLOR := Color(1.0, 0.45, 0.45, 1.0)
+const COMBAT_TEXT_STYLES := {
+	"damage": {"color": Color(1.0, 0.95, 0.82, 1.0), "emphasized": false},
+	"crit": {"color": Color(1.0, 0.82, 0.24, 1.0), "emphasized": true},
+	"hero_damage": {"color": Color(1.0, 0.45, 0.45, 1.0), "emphasized": false},
+	"heal": {"color": Color(0.45, 1.0, 0.55, 1.0), "emphasized": false},
+	"dodge": {"color": Color(0.72, 0.92, 1.0, 1.0), "emphasized": true},
+	"block": {"color": Color(0.7, 0.8, 1.0, 1.0), "emphasized": true},
+	"resist": {"color": Color(0.82, 0.72, 1.0, 1.0), "emphasized": true}
+}
 
 @onready var hero: Node2D = $CombatArea/Hero
 @onready var monster_container: Node = $CombatArea/Monsters
 @onready var wave_manager: Node = $WaveManager
+
+var floating_texts: Array[Label] = []
 
 func _ready() -> void:
 	hero.hero_died.connect(_on_hero_died)
@@ -39,10 +48,23 @@ func _attack_nearest_monster() -> void:
 	if nearest_monster:
 		hero.start_attack(nearest_monster)
 
-func _spawn_floating_text(text_value: String, world_position: Vector2, color: Color, is_emphasized: bool = false) -> void:
-	var floating_text = FLOATING_TEXT_SCENE.instantiate()
-	add_child(floating_text)
-	floating_text.show_value(text_value, world_position, color, is_emphasized)
+func _spawn_floating_text(text_value: String, world_position: Vector2, style_name: String) -> void:
+	var style = COMBAT_TEXT_STYLES.get(style_name, COMBAT_TEXT_STYLES.damage)
+	var floating_text = _get_floating_text_node()
+	if floating_text.get_parent() == null:
+		add_child(floating_text)
+	floating_text.show_value(text_value, world_position, style.color, style.emphasized)
+	floating_text.move_to_front()
+
+func _get_floating_text_node() -> Label:
+	if floating_texts.size() < MAX_ACTIVE_FLOATING_TEXTS:
+		var new_text = FLOATING_TEXT_SCENE.instantiate() as Label
+		floating_texts.append(new_text)
+		return new_text
+
+	var recycled_text = floating_texts.pop_front()
+	floating_texts.append(recycled_text)
+	return recycled_text
 
 func capture_debug_screenshot(file_name: String = "main_debug.png") -> String:
 	var debug_dir = "user://debug"
@@ -103,9 +125,8 @@ func _fill_image_rect(image: Image, rect: Rect2i, color: Color) -> void:
 			image.set_pixel(x, y, color)
 
 func _on_hero_attack_hit(target_position: Vector2, damage: float, is_crit: bool) -> void:
-	var color = CRIT_DAMAGE_TEXT_COLOR if is_crit else DAMAGE_TEXT_COLOR
 	var damage_text = str(int(round(damage)))
-	_spawn_floating_text(damage_text, target_position + DAMAGE_TEXT_OFFSET, color, is_crit)
+	_spawn_floating_text(damage_text, target_position + DAMAGE_TEXT_OFFSET, "crit" if is_crit else "damage")
 
 func _on_monster_spawned(monster: Node2D) -> void:
 	var attack_hit_callable := Callable(self, "_on_monster_attack_hit")
@@ -114,7 +135,7 @@ func _on_monster_spawned(monster: Node2D) -> void:
 
 func _on_monster_attack_hit(target_position: Vector2, damage: float) -> void:
 	var damage_text = str(int(round(damage)))
-	_spawn_floating_text(damage_text, target_position + HERO_DAMAGE_TEXT_OFFSET, HERO_DAMAGE_TEXT_COLOR)
+	_spawn_floating_text(damage_text, target_position + HERO_DAMAGE_TEXT_OFFSET, "hero_damage")
 
 func _on_hero_died() -> void:
 	var save_manager = get_node("/root/SaveManager")

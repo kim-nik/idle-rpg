@@ -1,0 +1,232 @@
+[gd_scene format=3]
+
+[node name="UpgradesTab" type="VBoxContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="UpgradeContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="DamageRow" type="HBoxContainer" parent="UpgradeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="DamageButton" type="Button" parent="UpgradeContainer/DamageRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 88)
+theme_override_font_sizes/font_size = 28
+text = "Damage Lv.1 Cost: 10"
+
+[node name="DamageX10Button" type="Button" parent="UpgradeContainer/DamageRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x10"
+
+[node name="DamageX100Button" type="Button" parent="UpgradeContainer/DamageRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x100"
+
+[node name="SpeedRow" type="HBoxContainer" parent="UpgradeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="SpeedButton" type="Button" parent="UpgradeContainer/SpeedRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 88)
+theme_override_font_sizes/font_size = 28
+text = "Attack Speed Lv.1 Cost: 15"
+
+[node name="SpeedX10Button" type="Button" parent="UpgradeContainer/SpeedRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x10"
+
+[node name="SpeedX100Button" type="Button" parent="UpgradeContainer/SpeedRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x100"
+
+[node name="HpRow" type="HBoxContainer" parent="UpgradeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="HpButton" type="Button" parent="UpgradeContainer/HpRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 88)
+theme_override_font_sizes/font_size = 28
+text = "Max HP Lv.1 Cost: 12"
+
+[node name="HpX10Button" type="Button" parent="UpgradeContainer/HpRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x10"
+
+[node name="HpX100Button" type="Button" parent="UpgradeContainer/HpRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x100"
+
+[node name="ArmorRow" type="HBoxContainer" parent="UpgradeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ArmorButton" type="Button" parent="UpgradeContainer/ArmorRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 88)
+theme_override_font_sizes/font_size = 28
+text = "Armor Lv.1 Cost: 18"
+
+[node name="ArmorX10Button" type="Button" parent="UpgradeContainer/ArmorRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x10"
+
+[node name="ArmorX100Button" type="Button" parent="UpgradeContainer/ArmorRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x100"
+
+[node name="RegenRow" type="HBoxContainer" parent="UpgradeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="RegenButton" type="Button" parent="UpgradeContainer/RegenRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 88)
+theme_override_font_sizes/font_size = 28
+text = "HP Regen Lv.1 Cost: 16"
+
+[node name="RegenX10Button" type="Button" parent="UpgradeContainer/RegenRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x10"
+
+[node name="RegenX100Button" type="Button" parent="UpgradeContainer/RegenRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x100"
+
+[node name="CritChanceRow" type="HBoxContainer" parent="UpgradeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="CritChanceButton" type="Button" parent="UpgradeContainer/CritChanceRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 88)
+theme_override_font_sizes/font_size = 28
+text = "Crit Chance Lv.1 Cost: 20"
+
+[node name="CritChanceX10Button" type="Button" parent="UpgradeContainer/CritChanceRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x10"
+
+[node name="CritChanceX100Button" type="Button" parent="UpgradeContainer/CritChanceRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x100"
+
+[node name="CritDmgRow" type="HBoxContainer" parent="UpgradeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="CritDmgButton" type="Button" parent="UpgradeContainer/CritDmgRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 88)
+theme_override_font_sizes/font_size = 28
+text = "Crit Damage Lv.1 Cost: 25"
+
+[node name="CritDmgX10Button" type="Button" parent="UpgradeContainer/CritDmgRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x10"
+
+[node name="CritDmgX100Button" type="Button" parent="UpgradeContainer/CritDmgRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x100"
+
+[node name="DebugGoldRow" type="HBoxContainer" parent="UpgradeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="DebugGoldButton" type="Button" parent="UpgradeContainer/DebugGoldRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 88)
+theme_override_font_sizes/font_size = 28
+text = "Debug +100 Gold"
+
+[node name="DebugGoldX10Button" type="Button" parent="UpgradeContainer/DebugGoldRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x10"
+
+[node name="DebugGoldX100Button" type="Button" parent="UpgradeContainer/DebugGoldRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x100"
+
+[node name="ResetProgressRow" type="HBoxContainer" parent="UpgradeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ResetProgressButton" type="Button" parent="UpgradeContainer/ResetProgressRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 88)
+theme_override_font_sizes/font_size = 28
+text = "Reset Progress"
+
+[node name="ResetProgressX10Button" type="Button" parent="UpgradeContainer/ResetProgressRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x10"
+
+[node name="ResetProgressX100Button" type="Button" parent="UpgradeContainer/ResetProgressRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 88)
+theme_override_font_sizes/font_size = 24
+text = "x100"
+
+[node name="BottomSpacer" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2

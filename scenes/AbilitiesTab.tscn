@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+[node name="AbilitiesTab" type="VBoxContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 2
+text = "Abilities"
+
+[node name="DescriptionLabel" type="Label" parent="."]
+layout_mode = 2
+autowrap_mode = 3
+text = "This tab will hold the ability list, 8 equipment slots, and loadout management. Content is intentionally a placeholder for now."
+
+[node name="SectionSpacer" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+
+[node name="PlannedFeaturesLabel" type="Label" parent="."]
+layout_mode = 2
+autowrap_mode = 3
+text = "Planned: unlocked abilities, slot assignment, passive and active skills, cooldown previews, and manual skill buttons for combat."
+
+[node name="BottomSpacer" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 320)
+layout_mode = 2
