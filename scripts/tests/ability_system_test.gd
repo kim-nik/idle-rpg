@@ -50,6 +50,8 @@ func run(environment) -> Array[String]:
 	var hp_before_punch = monsters[0].current_hp
 	ability_system.advance_runtime(4.1)
 	_expect(monsters[0].current_hp < hp_before_punch, "Punch did not hit the nearest enemy", failures)
+	var icon_nodes_after_punch = environment.main_scene.get_children().filter(func(child): return child.name == "AbilityImpactIcon")
+	_expect(not icon_nodes_after_punch.is_empty(), "Punch did not spawn an ability impact icon", failures)
 
 	var hp_before_sweep := []
 	for monster in monsters:
@@ -59,6 +61,8 @@ func run(environment) -> Array[String]:
 	_expect(monsters[1].current_hp < hp_before_sweep[1], "Leg Sweep did not affect the second enemy", failures)
 	_expect(monsters[2].current_hp < hp_before_sweep[2], "Leg Sweep did not affect the third enemy", failures)
 	_expect(is_equal_approx(monsters[3].current_hp, hp_before_sweep[3]), "Leg Sweep should not affect the fourth enemy", failures)
+	var icon_nodes_after_sweep = environment.main_scene.get_children().filter(func(child): return child.name == "AbilityImpactIcon")
+	_expect(icon_nodes_after_sweep.size() >= 3, "Leg Sweep should spawn impact icons for multiple targets", failures)
 
 	var hp_before_eye = monsters[3].current_hp
 	ability_system.advance_runtime(0.1)

@@ -1,9 +1,12 @@
 extends Node
 
 const FLOATING_TEXT_SCENE := preload("res://scenes/FloatingText.tscn")
+const ABILITY_IMPACT_ICON_SCENE := preload("res://scenes/AbilityImpactIcon.tscn")
 const MAX_ACTIVE_FLOATING_TEXTS := 12
+const MAX_ACTIVE_ABILITY_ICONS := 8
 const DAMAGE_TEXT_OFFSET := Vector2(-18, -72)
 const HERO_DAMAGE_TEXT_OFFSET := Vector2(-18, -96)
+const ABILITY_ICON_OFFSET := Vector2(0, -36)
 const COMBAT_TEXT_STYLES := {
 	"damage": {"color": Color(1.0, 0.95, 0.82, 1.0), "emphasized": false},
 	"crit": {"color": Color(1.0, 0.82, 0.24, 1.0), "emphasized": true},
@@ -21,6 +24,7 @@ const COMBAT_TEXT_STYLES := {
 @onready var ability_system: Node = get_node("/root/AbilitySystem")
 
 var floating_texts: Array[Label] = []
+var ability_impact_icons: Array[Sprite2D] = []
 
 func _ready() -> void:
 	hero.hero_died.connect(_on_hero_died)
@@ -74,6 +78,17 @@ func _get_floating_text_node() -> Label:
 	var recycled_text = floating_texts.pop_front()
 	floating_texts.append(recycled_text)
 	return recycled_text
+
+func _get_ability_impact_icon_node() -> Sprite2D:
+	if ability_impact_icons.size() < MAX_ACTIVE_ABILITY_ICONS:
+		var new_icon = ABILITY_IMPACT_ICON_SCENE.instantiate() as Sprite2D
+		add_child(new_icon)
+		ability_impact_icons.append(new_icon)
+		return new_icon
+
+	var recycled_icon = ability_impact_icons.pop_front()
+	ability_impact_icons.append(recycled_icon)
+	return recycled_icon
 
 func capture_debug_screenshot(file_name: String = "main_debug.png") -> String:
 	var debug_dir = "user://debug"
@@ -154,3 +169,7 @@ func _on_hero_died() -> void:
 
 func _on_ability_triggered(_ability_id: String, position: Vector2, text_value: String, style_name: String) -> void:
 	show_combat_text(text_value, position + DAMAGE_TEXT_OFFSET, style_name)
+	var icon_texture = AbilityVisuals.get_icon(_ability_id)
+	if icon_texture:
+		var impact_icon = _get_ability_impact_icon_node()
+		impact_icon.show_impact(icon_texture, position + ABILITY_ICON_OFFSET)

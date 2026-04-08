@@ -47,8 +47,9 @@ func run(environment) -> Array[String]:
 	_expect(not ui.upgrades_scroll.visible, "Upgrades scroll should be hidden on abilities tab", failures)
 	_expect(ui.abilities_scroll.visible, "Abilities scroll should be visible on abilities tab", failures)
 	_expect(ui.ability_slot_buttons.size() == 8, "Abilities tab should expose 8 loadout slots", failures)
-	_expect(ui.ability_slot_buttons[0].text == "Empty", "Empty active slot should show placeholder text", failures)
+	_expect(ui.ability_slot_buttons[0].get_display_name() == "Empty", "Empty active slot should show placeholder text", failures)
 	_expect(ui.ability_library_buttons.has("punch"), "Ability library should contain Punch", failures)
+	_expect(ui.ability_library_buttons["punch"].get_display_name() == "Punch", "Punch tile should show the ability name", failures)
 
 	ui.on_ability_tile_pressed(ui.ability_library_buttons["punch"])
 	_expect(ui.ability_popup_overlay.visible, "Ability popup should open from library tile tap", failures)

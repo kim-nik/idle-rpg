@@ -12,7 +12,6 @@ const ABILITY_TILE_SCRIPT := preload("res://scripts/ui/ability_tile_button.gd")
 const ABILITY_TILE_SIZE := Vector2(0, 144)
 const ABILITY_TILE_EMPTY_TEXT := "Empty"
 const ABILITY_NAME_MAX_CHARS := 12
-
 @onready var top_wave_label: Label = $TopWaveBanner/TopWaveLabel
 @onready var gold_label: Label = $Panel/MarginContainer/Content/StatsContainer/GoldLabel
 @onready var wave_label: Label = $Panel/MarginContainer/Content/StatsContainer/WaveLabel
@@ -28,6 +27,7 @@ const ABILITY_NAME_MAX_CHARS := 12
 @onready var upgrades_tab_button: Button = $Panel/MarginContainer/Content/TabBar/UpgradesTabButton
 @onready var abilities_tab_button: Button = $Panel/MarginContainer/Content/TabBar/AbilitiesTabButton
 @onready var map_tab_button: Button = $Panel/MarginContainer/Content/TabBar/MapTabButton
+@onready var popup_overlay_root: ColorRect = $PopupOverlay
 
 var damage_btn: Button
 var damage_x10_btn: Button
@@ -136,13 +136,13 @@ func _cache_ability_controls() -> void:
 			ability_slot_buttons.append(tile)
 
 	ability_library_grid = abilities_tab_root.get_node("LibraryGrid")
-	ability_popup_overlay = abilities_tab_root.get_node("PopupOverlay")
-	ability_popup_title_label = abilities_tab_root.get_node("PopupOverlay/PopupPanel/PopupMargin/PopupContent/PopupTitleLabel")
-	ability_popup_description_label = abilities_tab_root.get_node("PopupOverlay/PopupPanel/PopupMargin/PopupContent/PopupDescriptionLabel")
-	ability_popup_meta_label = abilities_tab_root.get_node("PopupOverlay/PopupPanel/PopupMargin/PopupContent/PopupMetaLabel")
-	ability_popup_status_label = abilities_tab_root.get_node("PopupOverlay/PopupPanel/PopupMargin/PopupContent/PopupStatusLabel")
-	ability_popup_close_button = abilities_tab_root.get_node("PopupOverlay/PopupPanel/PopupMargin/PopupContent/PopupButtons/PopupCloseButton")
-	ability_popup_action_button = abilities_tab_root.get_node("PopupOverlay/PopupPanel/PopupMargin/PopupContent/PopupButtons/PopupActionButton")
+	ability_popup_overlay = popup_overlay_root
+	ability_popup_title_label = popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/PopupTitleLabel")
+	ability_popup_description_label = popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/PopupDescriptionLabel")
+	ability_popup_meta_label = popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/PopupMetaLabel")
+	ability_popup_status_label = popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/PopupStatusLabel")
+	ability_popup_close_button = popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/PopupButtons/PopupCloseButton")
+	ability_popup_action_button = popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/PopupButtons/PopupActionButton")
 
 func _bind_upgrade_buttons() -> void:
 	_register_scrollable_button(damage_btn, _on_damage_clicked)
@@ -174,8 +174,8 @@ func _bind_upgrade_buttons() -> void:
 	_register_scrollable_button(reset_progress_x100_btn, func() -> void: _reset_progress_multiple(100))
 
 func _bind_ability_buttons() -> void:
-	_register_scrollable_button(ability_popup_close_button, _close_ability_popup)
-	_register_scrollable_button(ability_popup_action_button, _on_popup_ability_action_pressed)
+	ability_popup_close_button.pressed.connect(_close_ability_popup)
+	ability_popup_action_button.pressed.connect(_on_popup_ability_action_pressed)
 	_rebuild_ability_library()
 	for index in range(ability_slot_buttons.size()):
 		ability_slot_buttons[index].configure("", "slot", index)
@@ -311,6 +311,8 @@ func set_active_tab(tab_name: String) -> void:
 	map_tab_button.button_pressed = tab_name == TAB_MAP
 
 func on_ability_tile_pressed(tile: Button) -> void:
+	if tile.ability_id.is_empty():
+		return
 	selected_ability_id = tile.ability_id
 	selected_ability_source_role = tile.tile_role
 	selected_ability_slot_index = tile.slot_index
@@ -395,24 +397,36 @@ func _update_abilities_ui() -> void:
 		var tile = ability_slot_buttons[index]
 		var ability_id = equipped_slots[index]
 		tile.configure(ability_id, "slot", index)
-		tile.text = _build_ability_tile_text(ability_id)
+		_apply_ability_tile_visual(tile, ability_id, true)
 
 	for definition in ability_system.get_all_definitions():
 		var tile = ability_library_buttons.get(definition.ability_id)
 		if tile:
 			tile.configure(definition.ability_id, "library", -1)
-			tile.text = _build_ability_tile_text(definition.ability_id)
+			_apply_ability_tile_visual(tile, definition.ability_id, false)
 
 	if ability_popup_overlay.visible and not selected_ability_id.is_empty():
 		_update_ability_popup()
 
-func _build_ability_tile_text(ability_id: String) -> String:
+func _apply_ability_tile_visual(tile: Button, ability_id: String, use_runtime_cooldown: bool) -> void:
 	if ability_id.is_empty():
-		return ABILITY_TILE_EMPTY_TEXT
+		tile.set_visual_state(null, ABILITY_TILE_EMPTY_TEXT, "", true)
+		return
 	var definition = ability_system.get_definition(ability_id)
 	if definition == null:
-		return ability_id
-	return "%s\nCD %.1fs" % [_truncate_ability_name(definition.display_name), definition.cooldown_seconds]
+		tile.set_visual_state(null, ability_id, "", false)
+		return
+	var icon = AbilityVisuals.get_icon(ability_id)
+	var cooldown_text = "CD %.1fs" % definition.cooldown_seconds
+	if use_runtime_cooldown:
+		var remaining = ability_system.get_cooldown_remaining(ability_id)
+		cooldown_text = "Ready" if remaining <= 0.0 else "CD %.1fs" % remaining
+	tile.set_visual_state(
+		icon,
+		_truncate_ability_name(definition.display_name),
+		cooldown_text,
+		false
+	)
 
 func _truncate_ability_name(display_name: String) -> String:
 	if display_name.length() <= ABILITY_NAME_MAX_CHARS:

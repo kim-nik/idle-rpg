@@ -1,9 +1,21 @@
-[gd_scene load_steps=5 format=3 uid="uid://ui_panel"]
+[gd_scene load_steps=6 format=3 uid="uid://ui_panel"]
 
 [ext_resource type="Script" path="res://scripts/ui_controller.gd" id="1_ui"]
 [ext_resource type="PackedScene" path="res://scenes/UpgradesTab.tscn" id="2_upgrades"]
 [ext_resource type="PackedScene" path="res://scenes/AbilitiesTab.tscn" id="3_abilities"]
 [ext_resource type="PackedScene" path="res://scenes/MapTab.tscn" id="4_map"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_popup_panel"]
+bg_color = Color(0.12, 0.14, 0.18, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.95, 0.75, 0.32, 0.9)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
 
 [node name="UIArea" type="CanvasLayer"]
 script = ExtResource("1_ui")
@@ -158,3 +170,96 @@ size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 64)
 text = "Map"
 toggle_mode = true
+
+[node name="PopupOverlay" type="ColorRect" parent="."]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+color = Color(0, 0, 0, 0)
+
+[node name="PopupPanel" type="PanelContainer" parent="PopupOverlay"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -220.0
+offset_right = 320.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme_override_styles/panel = SubResource("StyleBoxFlat_popup_panel")
+
+[node name="PopupMargin" type="MarginContainer" parent="PopupOverlay/PopupPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+mouse_filter = 2
+
+[node name="PopupContent" type="VBoxContainer" parent="PopupOverlay/PopupPanel/PopupMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+mouse_filter = 2
+
+[node name="PopupTitleLabel" type="Label" parent="PopupOverlay/PopupPanel/PopupMargin/PopupContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Ability"
+mouse_filter = 2
+
+[node name="PopupDescriptionLabel" type="Label" parent="PopupOverlay/PopupPanel/PopupMargin/PopupContent"]
+layout_mode = 2
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 22
+text = "Ability description."
+mouse_filter = 2
+
+[node name="PopupMetaLabel" type="Label" parent="PopupOverlay/PopupPanel/PopupMargin/PopupContent"]
+layout_mode = 2
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 20
+text = "Cooldown."
+mouse_filter = 2
+
+[node name="PopupStatusLabel" type="Label" parent="PopupOverlay/PopupPanel/PopupMargin/PopupContent"]
+layout_mode = 2
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 20
+text = "Status."
+mouse_filter = 2
+
+[node name="PopupSpacer" type="Control" parent="PopupOverlay/PopupPanel/PopupMargin/PopupContent"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="PopupButtons" type="HBoxContainer" parent="PopupOverlay/PopupPanel/PopupMargin/PopupContent"]
+layout_mode = 2
+theme_override_constants/separation = 12
+mouse_filter = 2
+
+[node name="PopupCloseButton" type="Button" parent="PopupOverlay/PopupPanel/PopupMargin/PopupContent/PopupButtons"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 64)
+theme_override_font_sizes/font_size = 22
+text = "Close"
+mouse_filter = 1
+
+[node name="PopupActionButton" type="Button" parent="PopupOverlay/PopupPanel/PopupMargin/PopupContent/PopupButtons"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 64)
+theme_override_font_sizes/font_size = 22
+text = "Add"
+mouse_filter = 1
