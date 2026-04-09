@@ -46,12 +46,26 @@ func run(environment) -> Array[String]:
 	await environment.runner.get_tree().process_frame
 
 	ability_system.bind_runtime(environment.main_scene, hero, monster_container, wave_manager)
+	var ability_effects = environment.main_scene.get_node_or_null("CombatArea/AbilityEffects") as Node2D
+	_expect(ability_effects != null, "Ability effects container is missing", failures)
 
 	var hp_before_punch = monsters[0].current_hp
 	ability_system.advance_runtime(4.1)
 	_expect(monsters[0].current_hp < hp_before_punch, "Punch did not hit the nearest enemy", failures)
 	var icon_nodes_after_punch = environment.main_scene.get_children().filter(func(child): return child.name == "AbilityImpactIcon")
+	if ability_effects:
+		icon_nodes_after_punch = ability_effects.get_children().filter(func(child): return child.name == "AbilityImpactIcon")
 	_expect(not icon_nodes_after_punch.is_empty(), "Punch did not spawn an ability impact icon", failures)
+	if not icon_nodes_after_punch.is_empty():
+		var first_icon = icon_nodes_after_punch[0] as Sprite2D
+		_expect(first_icon != null, "Ability impact icon instance is invalid", failures)
+		if first_icon:
+			_expect(first_icon.get_parent() == ability_effects, "Ability impact icon is attached outside the combat 2D layer", failures)
+			_expect(
+				first_icon.global_position.is_equal_approx(monsters[0].global_position + Vector2(0, -36)),
+				"Ability impact icon did not start at the target position",
+				failures
+			)
 
 	var hp_before_sweep := []
 	for monster in monsters:
@@ -61,7 +75,7 @@ func run(environment) -> Array[String]:
 	_expect(monsters[1].current_hp < hp_before_sweep[1], "Leg Sweep did not affect the second enemy", failures)
 	_expect(monsters[2].current_hp < hp_before_sweep[2], "Leg Sweep did not affect the third enemy", failures)
 	_expect(is_equal_approx(monsters[3].current_hp, hp_before_sweep[3]), "Leg Sweep should not affect the fourth enemy", failures)
-	var icon_nodes_after_sweep = environment.main_scene.get_children().filter(func(child): return child.name == "AbilityImpactIcon")
+	var icon_nodes_after_sweep = ability_effects.get_children().filter(func(child): return child.name == "AbilityImpactIcon") if ability_effects else []
 	_expect(icon_nodes_after_sweep.size() >= 3, "Leg Sweep should spawn impact icons for multiple targets", failures)
 
 	var hp_before_eye = monsters[3].current_hp

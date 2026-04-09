@@ -19,6 +19,7 @@ const COMBAT_TEXT_STYLES := {
 }
 
 @onready var hero: Node2D = $CombatArea/Hero
+@onready var ability_effects: Node2D = $CombatArea/AbilityEffects
 @onready var monster_container: Node = $CombatArea/Monsters
 @onready var wave_manager: Node = $WaveManager
 @onready var ability_system: Node = get_node("/root/AbilitySystem")
@@ -83,7 +84,7 @@ func _get_floating_text_node() -> Label:
 func _get_ability_impact_icon_node() -> Sprite2D:
 	if ability_impact_icons.size() < MAX_ACTIVE_ABILITY_ICONS:
 		var new_icon = ABILITY_IMPACT_ICON_SCENE.instantiate() as Sprite2D
-		add_child(new_icon)
+		ability_effects.add_child(new_icon)
 		ability_impact_icons.append(new_icon)
 		return new_icon
 

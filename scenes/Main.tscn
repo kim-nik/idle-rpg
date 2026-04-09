@@ -24,6 +24,8 @@ color = Color(0.95, 0.75, 0.32, 1)
 [node name="Hero" parent="CombatArea" unique_id=1052448983 instance=ExtResource("2_hero")]
 position = Vector2(220, 480)
 
+[node name="AbilityEffects" type="Node2D" parent="CombatArea" unique_id=1123581321]
+
 [node name="Monsters" type="Node" parent="CombatArea" unique_id=1365405602]
 
 [node name="WaveManager" parent="." unique_id=2051081628 instance=ExtResource("4_wm")]
