@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 SaveManager="*res://scripts/save_manager.gd"
 UpgradeSystem="*res://scripts/upgrade_system.gd"
+AbilitySystem="*res://scripts/ability_system.gd"
 
 [display]
 

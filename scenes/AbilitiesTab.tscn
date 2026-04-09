@@ -5,24 +5,65 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 16
 
-[node name="TitleLabel" type="Label" parent="."]
+[node name="SlotGrid" type="GridContainer" parent="."]
 layout_mode = 2
-text = "Abilities"
+size_flags_horizontal = 3
+columns = 4
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
 
-[node name="DescriptionLabel" type="Label" parent="."]
+[node name="Slot1Button" type="Button" parent="SlotGrid"]
 layout_mode = 2
-autowrap_mode = 3
-text = "This tab will hold the ability list, 8 equipment slots, and loadout management. Content is intentionally a placeholder for now."
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 144)
 
-[node name="SectionSpacer" type="Control" parent="."]
-custom_minimum_size = Vector2(0, 12)
+[node name="Slot2Button" type="Button" parent="SlotGrid"]
 layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 144)
 
-[node name="PlannedFeaturesLabel" type="Label" parent="."]
+[node name="Slot3Button" type="Button" parent="SlotGrid"]
 layout_mode = 2
-autowrap_mode = 3
-text = "Planned: unlocked abilities, slot assignment, passive and active skills, cooldown previews, and manual skill buttons for combat."
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 144)
+
+[node name="Slot4Button" type="Button" parent="SlotGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 144)
+
+[node name="Slot5Button" type="Button" parent="SlotGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 144)
+
+[node name="Slot6Button" type="Button" parent="SlotGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 144)
+
+[node name="Slot7Button" type="Button" parent="SlotGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 144)
+
+[node name="Slot8Button" type="Button" parent="SlotGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 144)
+
+[node name="SectionDivider" type="ColorRect" parent="."]
+custom_minimum_size = Vector2(0, 4)
+layout_mode = 2
+color = Color(0.95, 0.75, 0.32, 0.75)
+
+[node name="LibraryGrid" type="GridContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 4
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
 
 [node name="BottomSpacer" type="Control" parent="."]
-custom_minimum_size = Vector2(0, 320)
+custom_minimum_size = Vector2(0, 24)
 layout_mode = 2

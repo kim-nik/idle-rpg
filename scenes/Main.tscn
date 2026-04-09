@@ -1,31 +1,31 @@
-[gd_scene load_steps=5 format=3 uid="uid://cjvkm8q2k3xhw"]
+[gd_scene format=3 uid="uid://cjvkm8q2k3xhw"]
 
-[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://bcpf0dbgwp4xq" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" uid="uid://bkv5xq4n6yplm" path="res://scenes/Hero.tscn" id="2_hero"]
-[ext_resource type="PackedScene" uid="uid://ui_panel" path="res://scenes/UI.tscn" id="3_ui"]
-[ext_resource type="PackedScene" uid="uid://wave_mgr" path="res://scenes/WaveManager.tscn" id="4_wm"]
+[ext_resource type="PackedScene" path="res://scenes/UI.tscn" id="3_ui"]
+[ext_resource type="PackedScene" path="res://scenes/WaveManager.tscn" id="4_wm"]
 
-[node name="Main" type="Node"]
+[node name="Main" type="Node" unique_id=258842542]
 script = ExtResource("1_main")
 
-[node name="ArenaBackground" type="ColorRect" parent="."]
+[node name="ArenaBackground" type="ColorRect" parent="." unique_id=1211446012]
 offset_right = 1080.0
 offset_bottom = 960.0
 color = Color(0.16, 0.18, 0.22, 1)
 
-[node name="ArenaDivider" type="ColorRect" parent="."]
+[node name="ArenaDivider" type="ColorRect" parent="." unique_id=731744753]
 offset_top = 960.0
 offset_right = 1080.0
 offset_bottom = 968.0
 color = Color(0.95, 0.75, 0.32, 1)
 
-[node name="CombatArea" type="Node2D" parent="."]
+[node name="CombatArea" type="Node2D" parent="." unique_id=1344535122]
 
-[node name="Hero" parent="CombatArea" instance=ExtResource("2_hero")]
+[node name="Hero" parent="CombatArea" unique_id=1052448983 instance=ExtResource("2_hero")]
 position = Vector2(220, 480)
 
-[node name="Monsters" type="Node" parent="CombatArea"]
+[node name="Monsters" type="Node" parent="CombatArea" unique_id=1365405602]
 
-[node name="WaveManager" parent="." instance=ExtResource("4_wm")]
+[node name="WaveManager" parent="." unique_id=2051081628 instance=ExtResource("4_wm")]
 
-[node name="UIArea" parent="." instance=ExtResource("3_ui")]
+[node name="UIArea" parent="." unique_id=1217829162 instance=ExtResource("3_ui")]

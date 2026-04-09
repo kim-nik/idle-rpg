@@ -18,6 +18,7 @@ func run(environment) -> Array[String]:
 	var hero = environment.get_hero()
 	var save_manager = environment.save_manager
 	var upgrade_system = environment.upgrade_system
+	var ability_system = environment.ability_system
 
 	_expect(ui != null, "UI controller is unavailable", failures)
 	_expect(hero != null, "Hero instance is unavailable for UI assertions", failures)
@@ -45,6 +46,32 @@ func run(environment) -> Array[String]:
 	_expect(ui.active_tab == ui.TAB_ABILITIES, "Abilities tab did not become active", failures)
 	_expect(not ui.upgrades_scroll.visible, "Upgrades scroll should be hidden on abilities tab", failures)
 	_expect(ui.abilities_scroll.visible, "Abilities scroll should be visible on abilities tab", failures)
+	_expect(ui.ability_slot_buttons.size() == 8, "Abilities tab should expose 8 loadout slots", failures)
+	_expect(ui.ability_slot_buttons[0].get_display_name() == "Empty", "Empty active slot should show placeholder text", failures)
+	_expect(ui.ability_library_buttons.has("punch"), "Ability library should contain Punch", failures)
+	_expect(ui.ability_library_buttons["punch"].get_display_name() == "Punch", "Punch tile should show the ability name", failures)
+
+	ui.on_ability_tile_pressed(ui.ability_library_buttons["punch"])
+	_expect(ui.ability_popup_overlay.visible, "Ability popup should open from library tile tap", failures)
+	_expect(ui.ability_popup_action_button.text == "Add", "Library popup action should add the ability", failures)
+	ui._on_popup_ability_action_pressed()
+	_expect(ability_system.get_ability_slot(0) == "punch", "Equipping Punch from UI failed", failures)
+
+	ui.on_ability_tile_pressed(ui.ability_library_buttons["leg_sweep"])
+	ui._on_popup_ability_action_pressed()
+	_expect(ability_system.get_ability_slot(1) == "leg_sweep", "Equipping Leg Sweep from UI failed", failures)
+
+	ui.on_ability_tile_pressed(ui.ability_library_buttons["evil_eye"])
+	ui._on_popup_ability_action_pressed()
+	_expect(ability_system.get_ability_slot(2) == "evil_eye", "Equipping Evil Eye from UI failed", failures)
+
+	ui.on_ability_tile_pressed(ui.ability_slot_buttons[2])
+	_expect(ui.ability_popup_action_button.text == "Remove", "Active slot popup action should remove the ability", failures)
+	ui._on_popup_ability_action_pressed()
+	_expect(ability_system.get_ability_slot(2).is_empty(), "Removing an equipped ability from UI failed", failures)
+
+	ui.drop_ability_tile(ui.ability_slot_buttons[3], {"ability_id": "evil_eye", "source_role": "library", "source_slot_index": -1})
+	_expect(ability_system.get_ability_slot(3) == "evil_eye", "Dragging Evil Eye to active slot failed", failures)
 
 	ui.set_active_tab(ui.TAB_MAP)
 	_expect(ui.active_tab == ui.TAB_MAP, "Map tab did not become active", failures)
@@ -95,7 +122,10 @@ func run(environment) -> Array[String]:
 	save_manager.save_data.crit_damage_level = 6
 	save_manager.save_data.wave = 8
 	save_manager.save_data.monsters_killed = 7
+	save_manager.save_data.unlocked_ability_ids = ["evil_eye", "leg_sweep", "punch"]
+	save_manager.save_data.equipped_ability_slots = ["punch", "leg_sweep", "evil_eye", "", "", "", "", ""]
 	upgrade_system.load_from_save()
+	ability_system.load_from_save()
 	hero.current_hp = 1
 
 	ui._on_reset_progress_clicked()
@@ -111,6 +141,16 @@ func run(environment) -> Array[String]:
 	_expect(save_manager.save_data.crit_damage_level == 1, "Reset did not restore crit damage level", failures)
 	_expect(save_manager.save_data.wave == 1, "Reset did not restore wave progress", failures)
 	_expect(save_manager.save_data.monsters_killed == 0, "Reset did not clear monster kills", failures)
+	_expect(
+		save_manager.save_data.unlocked_ability_ids == ["evil_eye", "leg_sweep", "punch"],
+		"Reset did not restore starter abilities",
+		failures
+	)
+	_expect(
+		save_manager.save_data.equipped_ability_slots == ["", "", "", "", "", "", "", ""],
+		"Reset did not clear equipped ability slots",
+		failures
+	)
 	_expect(hero.current_hp == hero.max_hp, "Hero health was not restored after reset", failures)
 	_expect(ui.gold_label.text == "Gold: 0", "Gold label did not refresh after reset", failures)
 	_expect(ui.top_wave_label.text == "Wave 1", "Top wave label did not refresh after reset", failures)

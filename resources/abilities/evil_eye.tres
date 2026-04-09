@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/abilities/ability_definition.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+ability_id = "evil_eye"
+display_name = "Evil Eye"
+description = "Auto-cast: deals 150% of the hero's attack damage to the enemy in the fourth position from the hero, if one exists."
+trigger_type = "periodic"
+starts_unlocked = true
+cooldown_seconds = 2.0
+target_rule = "enemy_position"
+effect_type = "direct_damage_targets"
+effect_values = {
+"damage_multiplier": 1.5,
+"flat_bonus": 0.0,
+"target_count": 1,
+"target_index": 3
+}
