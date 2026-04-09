@@ -48,11 +48,17 @@ func run(environment) -> Array[String]:
 	ability_system.bind_runtime(environment.main_scene, hero, monster_container, wave_manager)
 	var ability_effects = environment.main_scene.get_node_or_null("CombatArea/AbilityEffects") as Node2D
 	_expect(ability_effects != null, "Ability effects container is missing", failures)
+	if ability_effects:
+		_expect(
+			ability_effects.get_child_count() == environment.main_scene.MAX_ACTIVE_ABILITY_ICONS,
+			"Ability impact icon pool was not prewarmed",
+			failures
+		)
 
 	var hp_before_punch = monsters[0].current_hp
 	ability_system.advance_runtime(4.1)
 	_expect(monsters[0].current_hp < hp_before_punch, "Punch did not hit the nearest enemy", failures)
-	var icon_nodes_after_punch = environment.main_scene.get_children().filter(func(child): return child.name == "AbilityImpactIcon")
+	var icon_nodes_after_punch: Array = []
 	if ability_effects:
 		icon_nodes_after_punch = ability_effects.get_children().filter(func(child): return child.name == "AbilityImpactIcon")
 	_expect(not icon_nodes_after_punch.is_empty(), "Punch did not spawn an ability impact icon", failures)
@@ -66,6 +72,7 @@ func run(environment) -> Array[String]:
 				"Ability impact icon did not start at the target position",
 				failures
 			)
+			_expect(first_icon.visible, "Ability impact icon should be visible while the animation is active", failures)
 
 	var hp_before_sweep := []
 	for monster in monsters:

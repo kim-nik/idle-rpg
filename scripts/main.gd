@@ -31,6 +31,7 @@ func _ready() -> void:
 	hero.hero_died.connect(_on_hero_died)
 	hero.attack_hit.connect(_on_hero_attack_hit)
 	wave_manager.monster_spawned.connect(_on_monster_spawned)
+	_prewarm_ability_impact_icons()
 	if ability_system:
 		ability_system.load_from_save()
 		if not ability_system.is_connected("ability_triggered", Callable(self, "_on_ability_triggered")):
@@ -82,15 +83,18 @@ func _get_floating_text_node() -> Label:
 	return recycled_text
 
 func _get_ability_impact_icon_node() -> Sprite2D:
-	if ability_impact_icons.size() < MAX_ACTIVE_ABILITY_ICONS:
-		var new_icon = ABILITY_IMPACT_ICON_SCENE.instantiate() as Sprite2D
-		ability_effects.add_child(new_icon)
-		ability_impact_icons.append(new_icon)
-		return new_icon
-
 	var recycled_icon = ability_impact_icons.pop_front()
 	ability_impact_icons.append(recycled_icon)
 	return recycled_icon
+
+func _prewarm_ability_impact_icons() -> void:
+	if ability_impact_icons.size() >= MAX_ACTIVE_ABILITY_ICONS:
+		return
+
+	while ability_impact_icons.size() < MAX_ACTIVE_ABILITY_ICONS:
+		var new_icon = ABILITY_IMPACT_ICON_SCENE.instantiate() as Sprite2D
+		ability_effects.add_child(new_icon)
+		ability_impact_icons.append(new_icon)
 
 func capture_debug_screenshot(file_name: String = "main_debug.png") -> String:
 	var debug_dir = "user://debug"
@@ -174,4 +178,4 @@ func _on_ability_triggered(_ability_id: String, position: Vector2, text_value: S
 	var icon_texture = AbilityVisuals.get_icon(_ability_id)
 	if icon_texture:
 		var impact_icon = _get_ability_impact_icon_node()
-		impact_icon.show_impact(icon_texture, position + ABILITY_ICON_OFFSET)
+		impact_icon.show_impact(icon_texture, ability_effects.to_local(position + ABILITY_ICON_OFFSET))

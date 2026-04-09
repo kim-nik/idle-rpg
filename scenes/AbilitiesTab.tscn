@@ -1,69 +1,69 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://dfym7c0xuk5r5"]
 
-[node name="AbilitiesTab" type="VBoxContainer"]
+[node name="AbilitiesTab" type="VBoxContainer" unique_id=61320012]
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 16
 
-[node name="SlotGrid" type="GridContainer" parent="."]
+[node name="SlotGrid" type="GridContainer" parent="." unique_id=2005014656]
 layout_mode = 2
 size_flags_horizontal = 3
-columns = 4
 theme_override_constants/h_separation = 10
 theme_override_constants/v_separation = 10
+columns = 4
 
-[node name="Slot1Button" type="Button" parent="SlotGrid"]
+[node name="Slot1Button" type="Button" parent="SlotGrid" unique_id=1126990774]
+custom_minimum_size = Vector2(0, 144)
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 144)
 
-[node name="Slot2Button" type="Button" parent="SlotGrid"]
+[node name="Slot2Button" type="Button" parent="SlotGrid" unique_id=608248090]
+custom_minimum_size = Vector2(0, 144)
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 144)
 
-[node name="Slot3Button" type="Button" parent="SlotGrid"]
+[node name="Slot3Button" type="Button" parent="SlotGrid" unique_id=63803128]
+custom_minimum_size = Vector2(0, 144)
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 144)
 
-[node name="Slot4Button" type="Button" parent="SlotGrid"]
+[node name="Slot4Button" type="Button" parent="SlotGrid" unique_id=1735214839]
+custom_minimum_size = Vector2(0, 144)
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 144)
 
-[node name="Slot5Button" type="Button" parent="SlotGrid"]
+[node name="Slot5Button" type="Button" parent="SlotGrid" unique_id=588990498]
+custom_minimum_size = Vector2(0, 144)
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 144)
 
-[node name="Slot6Button" type="Button" parent="SlotGrid"]
+[node name="Slot6Button" type="Button" parent="SlotGrid" unique_id=326594731]
+custom_minimum_size = Vector2(0, 144)
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 144)
 
-[node name="Slot7Button" type="Button" parent="SlotGrid"]
+[node name="Slot7Button" type="Button" parent="SlotGrid" unique_id=772734914]
+custom_minimum_size = Vector2(0, 144)
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 144)
 
-[node name="Slot8Button" type="Button" parent="SlotGrid"]
+[node name="Slot8Button" type="Button" parent="SlotGrid" unique_id=636553147]
+custom_minimum_size = Vector2(0, 144)
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 144)
 
-[node name="SectionDivider" type="ColorRect" parent="."]
+[node name="SectionDivider" type="ColorRect" parent="." unique_id=1930095504]
 custom_minimum_size = Vector2(0, 4)
 layout_mode = 2
 color = Color(0.95, 0.75, 0.32, 0.75)
 
-[node name="LibraryGrid" type="GridContainer" parent="."]
+[node name="LibraryGrid" type="GridContainer" parent="." unique_id=535757117]
 layout_mode = 2
 size_flags_horizontal = 3
-columns = 4
 theme_override_constants/h_separation = 10
 theme_override_constants/v_separation = 10
+columns = 4
 
-[node name="BottomSpacer" type="Control" parent="."]
+[node name="BottomSpacer" type="Control" parent="." unique_id=119322593]
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
