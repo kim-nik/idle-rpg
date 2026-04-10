@@ -2,16 +2,119 @@ extends CanvasLayer
 
 signal upgrade_clicked(upgrade_name: String)
 
+const GameServicesRef = preload("res://scripts/core/game_services.gd")
+const ScrollableButtonHandlerRef = preload("res://scripts/ui/scrollable_button_handler.gd")
+
 const TAB_UPGRADES := "upgrades"
 const TAB_ABILITIES := "abilities"
 const TAB_MAP := "map"
-const QUICK_TAP_MAX_DURATION_MS := 180
-const SCROLL_START_DURATION_MS := 181
-const QUICK_TAP_MAX_MOVEMENT := 18.0
+const LIVE_REFRESH_INTERVAL := 0.1
 const ABILITY_TILE_SCRIPT := preload("res://scripts/ui/ability_tile_button.gd")
 const ABILITY_TILE_SIZE := Vector2(0, 144)
 const ABILITY_TILE_EMPTY_TEXT := "Empty"
 const ABILITY_NAME_MAX_CHARS := 12
+const UPGRADE_BUTTON_CONFIGS := [
+	{
+		"upgrade_id": "damage",
+		"display_name": "Damage",
+		"row": "DamageRow",
+		"primary_alias": "damage_btn",
+		"primary_node": "DamageButton",
+		"x10_alias": "damage_x10_btn",
+		"x10_node": "DamageX10Button",
+		"x100_alias": "damage_x100_btn",
+		"x100_node": "DamageX100Button"
+	},
+	{
+		"upgrade_id": "attack_speed",
+		"display_name": "Attack Speed",
+		"row": "SpeedRow",
+		"primary_alias": "speed_btn",
+		"primary_node": "SpeedButton",
+		"x10_alias": "speed_x10_btn",
+		"x10_node": "SpeedX10Button",
+		"x100_alias": "speed_x100_btn",
+		"x100_node": "SpeedX100Button"
+	},
+	{
+		"upgrade_id": "max_hp",
+		"display_name": "Max HP",
+		"row": "HpRow",
+		"primary_alias": "hp_btn",
+		"primary_node": "HpButton",
+		"x10_alias": "hp_x10_btn",
+		"x10_node": "HpX10Button",
+		"x100_alias": "hp_x100_btn",
+		"x100_node": "HpX100Button"
+	},
+	{
+		"upgrade_id": "armor",
+		"display_name": "Armor",
+		"row": "ArmorRow",
+		"primary_alias": "armor_btn",
+		"primary_node": "ArmorButton",
+		"x10_alias": "armor_x10_btn",
+		"x10_node": "ArmorX10Button",
+		"x100_alias": "armor_x100_btn",
+		"x100_node": "ArmorX100Button"
+	},
+	{
+		"upgrade_id": "health_regen",
+		"display_name": "HP Regen",
+		"row": "RegenRow",
+		"primary_alias": "regen_btn",
+		"primary_node": "RegenButton",
+		"x10_alias": "regen_x10_btn",
+		"x10_node": "RegenX10Button",
+		"x100_alias": "regen_x100_btn",
+		"x100_node": "RegenX100Button"
+	},
+	{
+		"upgrade_id": "crit_chance",
+		"display_name": "Crit Chance",
+		"row": "CritChanceRow",
+		"primary_alias": "crit_chance_btn",
+		"primary_node": "CritChanceButton",
+		"x10_alias": "crit_chance_x10_btn",
+		"x10_node": "CritChanceX10Button",
+		"x100_alias": "crit_chance_x100_btn",
+		"x100_node": "CritChanceX100Button"
+	},
+	{
+		"upgrade_id": "crit_damage",
+		"display_name": "Crit Damage",
+		"row": "CritDmgRow",
+		"primary_alias": "crit_dmg_btn",
+		"primary_node": "CritDmgButton",
+		"x10_alias": "crit_dmg_x10_btn",
+		"x10_node": "CritDmgX10Button",
+		"x100_alias": "crit_dmg_x100_btn",
+		"x100_node": "CritDmgX100Button"
+	}
+]
+const SPECIAL_BUTTON_CONFIGS := [
+	{
+		"action_id": "debug_gold",
+		"row": "DebugGoldRow",
+		"primary_alias": "debug_gold_btn",
+		"primary_node": "DebugGoldButton",
+		"x10_alias": "debug_gold_x10_btn",
+		"x10_node": "DebugGoldX10Button",
+		"x100_alias": "debug_gold_x100_btn",
+		"x100_node": "DebugGoldX100Button"
+	},
+	{
+		"action_id": "reset_progress",
+		"row": "ResetProgressRow",
+		"primary_alias": "reset_progress_btn",
+		"primary_node": "ResetProgressButton",
+		"x10_alias": "reset_progress_x10_btn",
+		"x10_node": "ResetProgressX10Button",
+		"x100_alias": "reset_progress_x100_btn",
+		"x100_node": "ResetProgressX100Button"
+	}
+]
+
 @onready var top_wave_label: Label = $TopWaveBanner/TopWaveLabel
 @onready var gold_label: Label = $Panel/MarginContainer/Content/StatsContainer/GoldLabel
 @onready var wave_label: Label = $Panel/MarginContainer/Content/StatsContainer/WaveLabel
@@ -68,61 +171,62 @@ var ability_popup_status_label: Label
 var ability_popup_close_button: Button
 var ability_popup_action_button: Button
 
-var upgrade_system
-var save_manager
-var ability_system
+var upgrade_system: Node
+var save_manager: Node
+var ability_system: Node
+var hero: Node2D
+var wave_manager: Node
+var monster_container: Node
 var active_tab: String = TAB_UPGRADES
-var button_touch_states := {}
 var selected_ability_id: String = ""
 var selected_ability_source_role: String = "library"
 var selected_ability_slot_index: int = -1
 
+var _scroll_handler := ScrollableButtonHandlerRef.new()
+var _refresh_requested := true
+var _refresh_timer := 0.0
+
 func _ready() -> void:
 	add_to_group("ui_controller")
-	save_manager = get_node("/root/SaveManager")
-	upgrade_system = get_node("/root/UpgradeSystem")
-	ability_system = get_node("/root/AbilitySystem")
+	save_manager = GameServicesRef.get_save_manager(self)
+	upgrade_system = GameServicesRef.get_upgrade_system(self)
+	ability_system = GameServicesRef.get_ability_system(self)
 
 	_cache_upgrade_controls()
 	_cache_ability_controls()
 	_bind_upgrade_buttons()
 	_bind_ability_buttons()
 	_bind_tab_buttons()
+	_connect_state_signals()
+	bind_runtime(_resolve_hero(), _resolve_wave_manager(), _resolve_monster_container())
 	set_active_tab(TAB_UPGRADES)
 	_update_ui()
 
-func _process(_delta: float) -> void:
-	_update_ui()
+func bind_runtime(next_hero: Node2D, next_wave_manager: Node, next_monster_container: Node) -> void:
+	hero = next_hero
+	wave_manager = next_wave_manager
+	monster_container = next_monster_container
+	_connect_runtime_signals()
+	_request_refresh()
+
+func _process(delta: float) -> void:
+	_refresh_timer += delta
+	var should_live_refresh = hero != null and is_instance_valid(hero)
+	if _refresh_requested or (should_live_refresh and _refresh_timer >= LIVE_REFRESH_INTERVAL):
+		_update_ui()
 
 func _cache_upgrade_controls() -> void:
 	var upgrade_container = upgrades_tab_root.get_node("UpgradeContainer")
-	damage_btn = upgrade_container.get_node("DamageRow/DamageButton")
-	damage_x10_btn = upgrade_container.get_node("DamageRow/DamageX10Button")
-	damage_x100_btn = upgrade_container.get_node("DamageRow/DamageX100Button")
-	speed_btn = upgrade_container.get_node("SpeedRow/SpeedButton")
-	speed_x10_btn = upgrade_container.get_node("SpeedRow/SpeedX10Button")
-	speed_x100_btn = upgrade_container.get_node("SpeedRow/SpeedX100Button")
-	hp_btn = upgrade_container.get_node("HpRow/HpButton")
-	hp_x10_btn = upgrade_container.get_node("HpRow/HpX10Button")
-	hp_x100_btn = upgrade_container.get_node("HpRow/HpX100Button")
-	armor_btn = upgrade_container.get_node("ArmorRow/ArmorButton")
-	armor_x10_btn = upgrade_container.get_node("ArmorRow/ArmorX10Button")
-	armor_x100_btn = upgrade_container.get_node("ArmorRow/ArmorX100Button")
-	regen_btn = upgrade_container.get_node("RegenRow/RegenButton")
-	regen_x10_btn = upgrade_container.get_node("RegenRow/RegenX10Button")
-	regen_x100_btn = upgrade_container.get_node("RegenRow/RegenX100Button")
-	crit_chance_btn = upgrade_container.get_node("CritChanceRow/CritChanceButton")
-	crit_chance_x10_btn = upgrade_container.get_node("CritChanceRow/CritChanceX10Button")
-	crit_chance_x100_btn = upgrade_container.get_node("CritChanceRow/CritChanceX100Button")
-	crit_dmg_btn = upgrade_container.get_node("CritDmgRow/CritDmgButton")
-	crit_dmg_x10_btn = upgrade_container.get_node("CritDmgRow/CritDmgX10Button")
-	crit_dmg_x100_btn = upgrade_container.get_node("CritDmgRow/CritDmgX100Button")
-	debug_gold_btn = upgrade_container.get_node("DebugGoldRow/DebugGoldButton")
-	debug_gold_x10_btn = upgrade_container.get_node("DebugGoldRow/DebugGoldX10Button")
-	debug_gold_x100_btn = upgrade_container.get_node("DebugGoldRow/DebugGoldX100Button")
-	reset_progress_btn = upgrade_container.get_node("ResetProgressRow/ResetProgressButton")
-	reset_progress_x10_btn = upgrade_container.get_node("ResetProgressRow/ResetProgressX10Button")
-	reset_progress_x100_btn = upgrade_container.get_node("ResetProgressRow/ResetProgressX100Button")
+	for config in UPGRADE_BUTTON_CONFIGS:
+		_cache_button_group(upgrade_container, config)
+	for config in SPECIAL_BUTTON_CONFIGS:
+		_cache_button_group(upgrade_container, config)
+
+func _cache_button_group(root: Node, config: Dictionary) -> void:
+	var row = root.get_node(String(config.get("row", "")))
+	set(String(config.get("primary_alias", "")), row.get_node(String(config.get("primary_node", ""))))
+	set(String(config.get("x10_alias", "")), row.get_node(String(config.get("x10_node", ""))))
+	set(String(config.get("x100_alias", "")), row.get_node(String(config.get("x100_node", ""))))
 
 func _cache_ability_controls() -> void:
 	var slot_grid = abilities_tab_root.get_node("SlotGrid")
@@ -145,33 +249,32 @@ func _cache_ability_controls() -> void:
 	ability_popup_action_button = popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/PopupButtons/PopupActionButton")
 
 func _bind_upgrade_buttons() -> void:
-	_register_scrollable_button(damage_btn, _on_damage_clicked)
-	_register_scrollable_button(damage_x10_btn, func() -> void: _purchase_upgrade_multiple("damage", 10))
-	_register_scrollable_button(damage_x100_btn, func() -> void: _purchase_upgrade_multiple("damage", 100))
-	_register_scrollable_button(speed_btn, _on_speed_clicked)
-	_register_scrollable_button(speed_x10_btn, func() -> void: _purchase_upgrade_multiple("attack_speed", 10))
-	_register_scrollable_button(speed_x100_btn, func() -> void: _purchase_upgrade_multiple("attack_speed", 100))
-	_register_scrollable_button(hp_btn, _on_hp_clicked)
-	_register_scrollable_button(hp_x10_btn, func() -> void: _purchase_upgrade_multiple("max_hp", 10))
-	_register_scrollable_button(hp_x100_btn, func() -> void: _purchase_upgrade_multiple("max_hp", 100))
-	_register_scrollable_button(armor_btn, _on_armor_clicked)
-	_register_scrollable_button(armor_x10_btn, func() -> void: _purchase_upgrade_multiple("armor", 10))
-	_register_scrollable_button(armor_x100_btn, func() -> void: _purchase_upgrade_multiple("armor", 100))
-	_register_scrollable_button(regen_btn, _on_regen_clicked)
-	_register_scrollable_button(regen_x10_btn, func() -> void: _purchase_upgrade_multiple("health_regen", 10))
-	_register_scrollable_button(regen_x100_btn, func() -> void: _purchase_upgrade_multiple("health_regen", 100))
-	_register_scrollable_button(crit_chance_btn, _on_crit_chance_clicked)
-	_register_scrollable_button(crit_chance_x10_btn, func() -> void: _purchase_upgrade_multiple("crit_chance", 10))
-	_register_scrollable_button(crit_chance_x100_btn, func() -> void: _purchase_upgrade_multiple("crit_chance", 100))
-	_register_scrollable_button(crit_dmg_btn, _on_crit_dmg_clicked)
-	_register_scrollable_button(crit_dmg_x10_btn, func() -> void: _purchase_upgrade_multiple("crit_damage", 10))
-	_register_scrollable_button(crit_dmg_x100_btn, func() -> void: _purchase_upgrade_multiple("crit_damage", 100))
+	for config in UPGRADE_BUTTON_CONFIGS:
+		var upgrade_id = String(config.get("upgrade_id", ""))
+		_register_scrollable_button(get(String(config.get("primary_alias", ""))), func() -> void:
+			_purchase_upgrade(upgrade_id)
+		)
+		_register_scrollable_button(get(String(config.get("x10_alias", ""))), func() -> void:
+			_purchase_upgrade_multiple(upgrade_id, 10)
+		)
+		_register_scrollable_button(get(String(config.get("x100_alias", ""))), func() -> void:
+			_purchase_upgrade_multiple(upgrade_id, 100)
+		)
+
 	_register_scrollable_button(debug_gold_btn, _on_debug_gold_clicked)
-	_register_scrollable_button(debug_gold_x10_btn, func() -> void: _add_debug_gold(10))
-	_register_scrollable_button(debug_gold_x100_btn, func() -> void: _add_debug_gold(100))
+	_register_scrollable_button(debug_gold_x10_btn, func() -> void:
+		_add_debug_gold(10)
+	)
+	_register_scrollable_button(debug_gold_x100_btn, func() -> void:
+		_add_debug_gold(100)
+	)
 	_register_scrollable_button(reset_progress_btn, _on_reset_progress_clicked)
-	_register_scrollable_button(reset_progress_x10_btn, func() -> void: _reset_progress_multiple(10))
-	_register_scrollable_button(reset_progress_x100_btn, func() -> void: _reset_progress_multiple(100))
+	_register_scrollable_button(reset_progress_x10_btn, func() -> void:
+		_reset_progress_multiple(10)
+	)
+	_register_scrollable_button(reset_progress_x100_btn, func() -> void:
+		_reset_progress_multiple(100)
+	)
 
 func _bind_ability_buttons() -> void:
 	ability_popup_close_button.pressed.connect(_close_ability_popup)
@@ -181,125 +284,42 @@ func _bind_ability_buttons() -> void:
 		ability_slot_buttons[index].configure("", "slot", index)
 
 func _bind_tab_buttons() -> void:
-	upgrades_tab_button.pressed.connect(func() -> void: set_active_tab(TAB_UPGRADES))
-	abilities_tab_button.pressed.connect(func() -> void: set_active_tab(TAB_ABILITIES))
-	map_tab_button.pressed.connect(func() -> void: set_active_tab(TAB_MAP))
-
-func _register_scrollable_button(button: Button, tap_action: Callable) -> void:
-	button.gui_input.connect(func(event: InputEvent) -> void:
-		_handle_scrollable_button_input(button, event, tap_action)
+	upgrades_tab_button.pressed.connect(func() -> void:
+		set_active_tab(TAB_UPGRADES)
+	)
+	abilities_tab_button.pressed.connect(func() -> void:
+		set_active_tab(TAB_ABILITIES)
+	)
+	map_tab_button.pressed.connect(func() -> void:
+		set_active_tab(TAB_MAP)
 	)
 
-func _handle_scrollable_button_input(button: Button, event: InputEvent, tap_action: Callable) -> void:
-	if event is InputEventScreenTouch:
-		_handle_touch_press(button, event, tap_action)
-		return
-	if event is InputEventScreenDrag:
-		_handle_touch_drag(button, event)
-		return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		_handle_mouse_press(button, event, tap_action)
-		return
-	if event is InputEventMouseMotion:
-		_handle_mouse_drag(button, event)
+func _connect_state_signals() -> void:
+	_connect_signal_once(save_manager, "save_data_changed", Callable(self, "_on_external_state_changed"))
+	_connect_signal_once(upgrade_system, "upgrades_changed", Callable(self, "_on_external_state_changed"))
+	_connect_signal_once(ability_system, "loadout_changed", Callable(self, "_on_external_state_changed"))
 
-func _handle_touch_press(button: Button, event: InputEventScreenTouch, tap_action: Callable) -> void:
-	var button_id = button.get_instance_id()
-	if event.pressed:
-		button_touch_states[button_id] = {
-			"pointer_id": event.index,
-			"press_position": event.position,
-			"last_position": event.position,
-			"press_time_ms": Time.get_ticks_msec(),
-			"scrolling": false,
-			"tap_action": tap_action
-		}
-		return
+func _connect_runtime_signals() -> void:
+	_connect_signal_once(wave_manager, "wave_started", Callable(self, "_on_external_state_changed"))
+	_connect_signal_once(wave_manager, "wave_completed", Callable(self, "_on_external_state_changed"))
 
-	if not button_touch_states.has(button_id):
+func _connect_signal_once(emitter: Object, signal_name: String, callable: Callable) -> void:
+	if emitter == null or not emitter.has_signal(signal_name):
 		return
-	var state: Dictionary = button_touch_states[button_id]
-	if state.pointer_id != event.index:
-		return
-	var duration_ms = Time.get_ticks_msec() - int(state.press_time_ms)
-	var drag_distance = Vector2(state.press_position).distance_to(event.position)
-	if _is_quick_tap(duration_ms, drag_distance):
-		tap_action.call()
-	_clear_button_touch_state(button)
+	if not emitter.is_connected(signal_name, callable):
+		emitter.connect(signal_name, callable)
 
-func _handle_touch_drag(button: Button, event: InputEventScreenDrag) -> void:
-	var button_id = button.get_instance_id()
-	if not button_touch_states.has(button_id):
-		return
-	var state: Dictionary = button_touch_states[button_id]
-	if state.pointer_id != event.index:
-		return
-	var duration_ms = Time.get_ticks_msec() - int(state.press_time_ms)
-	var drag_distance = Vector2(state.press_position).distance_to(event.position)
-	if _should_start_scroll(duration_ms, drag_distance):
-		state.scrolling = true
-		_scroll_button_parent(button, event.relative.y)
-	state.last_position = event.position
-	button_touch_states[button_id] = state
-
-func _handle_mouse_press(button: Button, event: InputEventMouseButton, tap_action: Callable) -> void:
-	var button_id = button.get_instance_id()
-	if event.pressed:
-		button_touch_states[button_id] = {
-			"pointer_id": -1,
-			"press_position": event.position,
-			"last_position": event.position,
-			"press_time_ms": Time.get_ticks_msec(),
-			"scrolling": false,
-			"tap_action": tap_action
-		}
-		return
-
-	if not button_touch_states.has(button_id):
-		return
-	var state: Dictionary = button_touch_states[button_id]
-	var duration_ms = Time.get_ticks_msec() - int(state.press_time_ms)
-	var drag_distance = Vector2(state.press_position).distance_to(event.position)
-	if _is_quick_tap(duration_ms, drag_distance):
-		tap_action.call()
-	_clear_button_touch_state(button)
-
-func _handle_mouse_drag(button: Button, event: InputEventMouseMotion) -> void:
-	var button_id = button.get_instance_id()
-	if not button_touch_states.has(button_id):
-		return
-	if not (event.button_mask & MOUSE_BUTTON_MASK_LEFT):
-		return
-	var state: Dictionary = button_touch_states[button_id]
-	var duration_ms = Time.get_ticks_msec() - int(state.press_time_ms)
-	var drag_distance = Vector2(state.press_position).distance_to(event.position)
-	if _should_start_scroll(duration_ms, drag_distance):
-		state.scrolling = true
-		_scroll_button_parent(button, event.relative.y)
-	state.last_position = event.position
-	button_touch_states[button_id] = state
-
-func _scroll_button_parent(button: Button, drag_delta_y: float) -> void:
-	var scroll_container = _find_parent_scroll_container(button)
-	if scroll_container:
-		scroll_container.scroll_vertical = int(max(scroll_container.scroll_vertical - drag_delta_y, 0.0))
-
-func _find_parent_scroll_container(control: Control) -> ScrollContainer:
-	var parent = control.get_parent()
-	while parent != null:
-		if parent is ScrollContainer:
-			return parent
-		parent = parent.get_parent()
-	return null
+func _register_scrollable_button(button: Button, tap_action: Callable) -> void:
+	_scroll_handler.register_button(button, tap_action)
 
 func _clear_button_touch_state(button: Button) -> void:
-	button_touch_states.erase(button.get_instance_id())
+	_scroll_handler.clear_state(button)
 
 func _is_quick_tap(duration_ms: int, drag_distance: float) -> bool:
-	return duration_ms <= QUICK_TAP_MAX_DURATION_MS and drag_distance <= QUICK_TAP_MAX_MOVEMENT
+	return _scroll_handler.is_quick_tap(duration_ms, drag_distance)
 
 func _should_start_scroll(duration_ms: int, drag_distance: float) -> bool:
-	return duration_ms >= SCROLL_START_DURATION_MS or drag_distance > QUICK_TAP_MAX_MOVEMENT
+	return _scroll_handler.should_start_scroll(duration_ms, drag_distance)
 
 func set_active_tab(tab_name: String) -> void:
 	active_tab = tab_name
@@ -309,6 +329,7 @@ func set_active_tab(tab_name: String) -> void:
 	upgrades_tab_button.button_pressed = tab_name == TAB_UPGRADES
 	abilities_tab_button.button_pressed = tab_name == TAB_ABILITIES
 	map_tab_button.button_pressed = tab_name == TAB_MAP
+	_request_refresh()
 
 func on_ability_tile_pressed(tile: Button) -> void:
 	if tile.ability_id.is_empty():
@@ -338,6 +359,7 @@ func drop_ability_tile(target_tile: Button, data) -> void:
 	var ability_id = String(data.get("ability_id", ""))
 	if ability_system.equip_ability(target_tile.slot_index, ability_id):
 		_refresh_hero_stats()
+	_request_refresh()
 	_update_ui()
 
 func _rebuild_ability_library() -> void:
@@ -356,39 +378,47 @@ func _rebuild_ability_library() -> void:
 		ability_library_buttons[definition.ability_id] = tile
 
 func _update_ui() -> void:
+	_refresh_requested = false
+	_refresh_timer = 0.0
+	if save_manager == null or upgrade_system == null or ability_system == null:
+		return
+
 	if gold_label:
-		gold_label.text = "Gold: %d" % save_manager.save_data.gold
+		gold_label.text = "Gold: %d" % int(save_manager.save_data.get("gold", 0))
 	if top_wave_label:
-		top_wave_label.text = "Wave %d" % save_manager.save_data.wave
+		top_wave_label.text = "Wave %d" % int(save_manager.save_data.get("wave", 1))
 	if wave_label:
-		wave_label.text = "Monsters: %d/10" % save_manager.save_data.monsters_killed
+		wave_label.text = "Monsters: %d/10" % int(save_manager.save_data.get("monsters_killed", 0))
 
 	var upgrades = upgrade_system.get_all_upgrades()
-	_update_upgrade_button(damage_btn, "Damage", upgrades.damage.level, upgrades.damage.cost)
-	_update_upgrade_multiplier_buttons("damage", damage_x10_btn, damage_x100_btn)
-	_update_upgrade_button(speed_btn, "Attack Speed", upgrades.attack_speed.level, upgrades.attack_speed.cost)
-	_update_upgrade_multiplier_buttons("attack_speed", speed_x10_btn, speed_x100_btn)
-	_update_upgrade_button(hp_btn, "Max HP", upgrades.max_hp.level, upgrades.max_hp.cost)
-	_update_upgrade_multiplier_buttons("max_hp", hp_x10_btn, hp_x100_btn)
-	_update_upgrade_button(armor_btn, "Armor", upgrades.armor.level, upgrades.armor.cost)
-	_update_upgrade_multiplier_buttons("armor", armor_x10_btn, armor_x100_btn)
-	_update_upgrade_button(regen_btn, "HP Regen", upgrades.health_regen.level, upgrades.health_regen.cost)
-	_update_upgrade_multiplier_buttons("health_regen", regen_x10_btn, regen_x100_btn)
-	_update_upgrade_button(crit_chance_btn, "Crit Chance", upgrades.crit_chance.level, upgrades.crit_chance.cost)
-	_update_upgrade_multiplier_buttons("crit_chance", crit_chance_x10_btn, crit_chance_x100_btn)
-	_update_upgrade_button(crit_dmg_btn, "Crit Damage", upgrades.crit_damage.level, upgrades.crit_damage.cost)
-	_update_upgrade_multiplier_buttons("crit_damage", crit_dmg_x10_btn, crit_dmg_x100_btn)
-	_update_abilities_ui()
+	for config in UPGRADE_BUTTON_CONFIGS:
+		var upgrade_id = String(config.get("upgrade_id", ""))
+		var upgrade_state: Dictionary = upgrades.get(upgrade_id, {})
+		_update_upgrade_button(
+			get(String(config.get("primary_alias", ""))),
+			String(upgrade_state.get("display_name", config.get("display_name", upgrade_id.capitalize()))),
+			int(upgrade_state.get("level", 1)),
+			int(upgrade_state.get("cost", 0))
+		)
+		_update_upgrade_multiplier_buttons(
+			upgrade_id,
+			get(String(config.get("x10_alias", ""))),
+			get(String(config.get("x100_alias", "")))
+		)
 
-	var hero = get_node_or_null("../CombatArea/Hero")
-	if hero_stats_label and hero:
+	_update_abilities_ui()
+	_update_hero_stats_label()
+
+func _update_hero_stats_label() -> void:
+	var active_hero = hero if hero and is_instance_valid(hero) else _resolve_hero()
+	if hero_stats_label and active_hero:
 		hero_stats_label.text = "ATK: %d | SPD: %.1f | ARM: %d | REG: %.1f | HP: %d/%d" % [
-			int(hero.base_damage),
-			hero.attack_speed,
-			int(hero.armor),
-			hero.health_regen,
-			int(hero.current_hp),
-			int(hero.max_hp)
+			int(active_hero.base_damage),
+			active_hero.attack_speed,
+			int(active_hero.armor),
+			active_hero.health_regen,
+			int(active_hero.current_hp),
+			int(active_hero.max_hp)
 		]
 
 func _update_abilities_ui() -> void:
@@ -466,6 +496,7 @@ func _on_popup_ability_action_pressed() -> void:
 		var free_slot = _find_first_free_ability_slot()
 		if free_slot >= 0 and ability_system.equip_ability(free_slot, definition.ability_id):
 			_refresh_hero_stats()
+	_request_refresh()
 	_update_ui()
 	_close_ability_popup()
 
@@ -477,7 +508,7 @@ func _find_first_free_ability_slot() -> int:
 
 func _update_upgrade_button(btn: Button, name: String, level: int, cost: int) -> void:
 	btn.text = "%s Lv.%d Cost: %d" % [name, level, cost]
-	btn.disabled = save_manager.save_data.gold < cost
+	btn.disabled = int(save_manager.save_data.get("gold", 0)) < cost
 
 func _update_upgrade_multiplier_buttons(upgrade_name: String, x10_btn: Button, x100_btn: Button) -> void:
 	x10_btn.disabled = not _can_purchase_upgrade_times(upgrade_name, 10)
@@ -514,7 +545,8 @@ func _purchase_upgrade(upgrade_name: String) -> void:
 	if upgrade_system.purchase_upgrade(upgrade_name):
 		save_manager.save()
 		_refresh_hero_stats()
-		_update_ui()
+	_request_refresh()
+	_update_ui()
 
 func _purchase_upgrade_multiple(upgrade_name: String, times: int) -> void:
 	var purchase_count = 0
@@ -525,11 +557,12 @@ func _purchase_upgrade_multiple(upgrade_name: String, times: int) -> void:
 	if purchase_count > 0:
 		save_manager.save()
 		_refresh_hero_stats()
+	_request_refresh()
 	_update_ui()
 
 func _add_debug_gold(times: int) -> void:
-	save_manager.save_data.gold += 100 * times
-	save_manager.save()
+	save_manager.add_gold(100 * times, true)
+	_request_refresh()
 	_update_ui()
 
 func _reset_progress_multiple(times: int) -> void:
@@ -539,17 +572,18 @@ func _reset_progress_multiple(times: int) -> void:
 	ability_system.load_from_save()
 	_refresh_hero_stats(true)
 	_close_ability_popup()
+	_request_refresh()
 	_update_ui()
 
 func _refresh_hero_stats(restore_full_hp: bool = false) -> void:
-	var hero = get_node_or_null("../CombatArea/Hero")
-	if hero:
-		hero.update_stats()
+	var active_hero = hero if hero and is_instance_valid(hero) else _resolve_hero()
+	if active_hero:
+		active_hero.update_stats()
 		if restore_full_hp:
-			hero.current_hp = hero.max_hp
+			active_hero.current_hp = active_hero.max_hp
 
 func _can_purchase_upgrade_times(upgrade_name: String, times: int) -> bool:
-	var simulated_gold = save_manager.save_data.gold
+	var simulated_gold = int(save_manager.save_data.get("gold", 0))
 	var simulated_level = upgrade_system.get_upgrade_level(upgrade_name)
 	for _i in range(times):
 		var cost = upgrade_system.get_upgrade_cost(upgrade_name, simulated_level)
@@ -558,3 +592,27 @@ func _can_purchase_upgrade_times(upgrade_name: String, times: int) -> bool:
 		simulated_gold -= cost
 		simulated_level += 1
 	return true
+
+func _request_refresh() -> void:
+	_refresh_requested = true
+
+func _on_external_state_changed(_arg = null) -> void:
+	_request_refresh()
+
+func _resolve_hero() -> Node2D:
+	var parent_node = get_parent()
+	if parent_node == null:
+		return null
+	return parent_node.get_node_or_null("CombatArea/Hero") as Node2D
+
+func _resolve_wave_manager() -> Node:
+	var parent_node = get_parent()
+	if parent_node == null:
+		return null
+	return parent_node.get_node_or_null("WaveManager")
+
+func _resolve_monster_container() -> Node:
+	var parent_node = get_parent()
+	if parent_node == null:
+		return null
+	return parent_node.get_node_or_null("CombatArea/Monsters")

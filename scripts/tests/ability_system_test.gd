@@ -63,16 +63,20 @@ func run(environment) -> Array[String]:
 		icon_nodes_after_punch = ability_effects.get_children().filter(func(child): return child.name == "AbilityImpactIcon")
 	_expect(not icon_nodes_after_punch.is_empty(), "Punch did not spawn an ability impact icon", failures)
 	if not icon_nodes_after_punch.is_empty():
-		var first_icon = icon_nodes_after_punch[0] as Sprite2D
+		var first_icon = _find_nearest_visible_icon(icon_nodes_after_punch, monsters[0].global_position)
 		_expect(first_icon != null, "Ability impact icon instance is invalid", failures)
 		if first_icon:
+			var monster_bounds = monsters[0].get_visual_bounds()
+			var rendered_size = first_icon.get_rendered_size()
+			var expected_y = monster_bounds.position.y - 4.0 - (rendered_size.y * 0.5)
 			_expect(first_icon.get_parent() == ability_effects, "Ability impact icon is attached outside the combat 2D layer", failures)
+			_expect(is_equal_approx(rendered_size.x, monster_bounds.size.x), "Ability impact icon width should match target width", failures)
 			_expect(
-				first_icon.global_position.is_equal_approx(monsters[0].global_position + Vector2(0, -36)),
-				"Ability impact icon did not start at the target position",
+				first_icon.global_position.is_equal_approx(Vector2(monster_bounds.get_center().x, expected_y)),
+				"Ability impact icon did not appear directly above the target",
 				failures
 			)
-			_expect(first_icon.visible, "Ability impact icon should be visible while the animation is active", failures)
+			_expect(first_icon.is_active(), "Ability impact icon should be visible while the animation is active", failures)
 
 	var hp_before_sweep := []
 	for monster in monsters:
@@ -95,3 +99,16 @@ func run(environment) -> Array[String]:
 	_expect(is_equal_approx(monsters[3].current_hp, hp_before_cleared_eye), "Cleared ability slot still triggered", failures)
 
 	return failures
+
+func _find_nearest_visible_icon(icon_nodes: Array, target_position: Vector2) -> AbilityImpactIcon:
+	var nearest_icon: AbilityImpactIcon = null
+	var nearest_distance := INF
+	for node in icon_nodes:
+		var icon = node as AbilityImpactIcon
+		if icon == null or not icon.is_active():
+			continue
+		var distance = icon.global_position.distance_to(target_position)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest_icon = icon
+	return nearest_icon

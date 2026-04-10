@@ -5,6 +5,7 @@ signal attack_resolved(target: Node2D, damage_output: Dictionary)
 signal hero_died()
 
 const CombatMathRef = preload("res://scripts/combat_math.gd")
+const GameServicesRef = preload("res://scripts/core/game_services.gd")
 
 const ATTACK_BACKSTEP_DISTANCE: float = 10.0
 const ATTACK_LUNGE_DISTANCE: float = 18.0
@@ -43,8 +44,11 @@ func _process(delta: float) -> void:
 	update_health_bar()
 
 func update_stats() -> void:
-	var upgrade_system = get_node("/root/UpgradeSystem")
-	var ability_system = get_node_or_null("/root/AbilitySystem")
+	var upgrade_system = GameServicesRef.require_upgrade_system(self)
+	if upgrade_system == null:
+		return
+
+	var ability_system = GameServicesRef.get_ability_system(self)
 	var bonus_stats := {}
 	if ability_system:
 		bonus_stats = ability_system.get_passive_bonuses()
