@@ -49,11 +49,42 @@ func run(environment) -> Array[String]:
 	var ability_effects = environment.main_scene.get_node_or_null("CombatArea/AbilityEffects") as Node2D
 	_expect(ability_effects != null, "Ability effects container is missing", failures)
 	if ability_effects:
+		var pooled_icons = ability_effects.get_children().filter(func(child): return child is AbilityImpactIcon)
 		_expect(
-			ability_effects.get_child_count() == environment.main_scene.MAX_ACTIVE_ABILITY_ICONS,
-			"Ability impact icon pool was not prewarmed",
+			pooled_icons.is_empty(),
+			"Ability impact icon pool should stay empty before the first ability effect",
 			failures
 		)
+
+	var nested_body_monster = monster_scene.instantiate()
+	monster_container.add_child(nested_body_monster)
+	nested_body_monster.position = Vector2(520, 480)
+	nested_body_monster.setup("slime", 1.0)
+	var nested_body_root := Node2D.new()
+	nested_body_root.position = Vector2(8.0, -6.0)
+	var nested_polygon := Polygon2D.new()
+	nested_polygon.polygon = PackedVector2Array([
+		Vector2(-15.0, -20.0),
+		Vector2(15.0, -20.0),
+		Vector2(15.0, 20.0),
+		Vector2(-15.0, 20.0)
+	])
+	nested_body_root.add_child(nested_polygon)
+	nested_body_monster.add_child(nested_body_root)
+	nested_body_monster.body = nested_body_root
+	var nested_bounds = nested_body_monster.get_visual_bounds()
+	_expect(
+		nested_bounds.position.is_equal_approx(Vector2(513.0, 454.0)),
+		"Monster visual bounds should use a Polygon2D nested under Body",
+		failures
+	)
+	_expect(
+		nested_bounds.size.is_equal_approx(Vector2(30.0, 40.0)),
+		"Monster visual bounds size should match the nested Polygon2D",
+		failures
+	)
+	nested_body_monster.queue_free()
+	await environment.runner.get_tree().process_frame
 
 	var hp_before_punch = monsters[0].current_hp
 	ability_system.advance_runtime(4.1)
@@ -68,15 +99,24 @@ func run(environment) -> Array[String]:
 		if first_icon:
 			var monster_bounds = monsters[0].get_visual_bounds()
 			var rendered_size = first_icon.get_rendered_size()
+			var sprite = first_icon.get_node_or_null("Sprite2D") as Sprite2D
 			var expected_y = monster_bounds.position.y - 4.0 - (rendered_size.y * 0.5)
 			_expect(first_icon.get_parent() == ability_effects, "Ability impact icon is attached outside the combat 2D layer", failures)
+			_expect(monster_bounds.size.x > 1.0 and monster_bounds.size.y > 1.0, "Monster visual bounds should not collapse to a tiny fallback", failures)
 			_expect(is_equal_approx(rendered_size.x, monster_bounds.size.x), "Ability impact icon width should match target width", failures)
 			_expect(
 				first_icon.global_position.is_equal_approx(Vector2(monster_bounds.get_center().x, expected_y)),
 				"Ability impact icon did not appear directly above the target",
 				failures
 			)
+			_expect(sprite != null, "Ability impact icon should render through a scene Sprite2D", failures)
+			if sprite and sprite.texture:
+				var expected_scale = monster_bounds.size.x / sprite.texture.get_size().x
+				_expect(is_equal_approx(sprite.scale.x, expected_scale), "Ability impact icon scale on X is incorrect", failures)
+				_expect(is_equal_approx(sprite.scale.y, expected_scale), "Ability impact icon scale on Y is incorrect", failures)
 			_expect(first_icon.is_active(), "Ability impact icon should be visible while the animation is active", failures)
+			if sprite:
+				_expect(sprite.texture != null, "Ability impact icon sprite should receive the ability texture lazily", failures)
 
 	var hp_before_sweep := []
 	for monster in monsters:

@@ -12,9 +12,11 @@ const ATTACK_BACKSTEP_DURATION: float = 0.08
 const ATTACK_LUNGE_DURATION: float = 0.1
 const ATTACK_RECOVER_DURATION: float = 0.08
 const QUEUE_SPACING: float = 72.0
+const DEFAULT_VISUAL_SIZE := Vector2(50.0, 60.0)
 
 @onready var health_bar: ProgressBar = $HealthBar
 @onready var body: Node2D = $Body
+@onready var collision_shape: CollisionShape2D = get_node_or_null("CollisionShape2D") as CollisionShape2D
 
 var monster_type: String = "slime"
 var current_hp: float = 50.0
@@ -215,20 +217,82 @@ func _get_queue_index() -> int:
 	return monsters.find(self)
 
 func get_visual_bounds() -> Rect2:
-	if body is Polygon2D:
-		var polygon_body = body as Polygon2D
-		if not polygon_body.polygon.is_empty():
-			var first_point = polygon_body.to_global(polygon_body.polygon[0])
-			var min_corner = first_point
-			var max_corner = first_point
-			for point in polygon_body.polygon:
-				var world_point = polygon_body.to_global(point)
-				min_corner.x = min(min_corner.x, world_point.x)
-				min_corner.y = min(min_corner.y, world_point.y)
-				max_corner.x = max(max_corner.x, world_point.x)
-				max_corner.y = max(max_corner.y, world_point.y)
-			return Rect2(min_corner, max_corner - min_corner)
-	return Rect2(global_position - Vector2.ONE * 0.5, Vector2.ONE)
+	var polygon_body := _find_polygon_body()
+	var polygon_bounds := _build_world_rect_from_points(
+		polygon_body,
+		polygon_body.polygon if polygon_body else PackedVector2Array()
+	)
+	if _has_visible_area(polygon_bounds):
+		return polygon_bounds
+
+	var collision_bounds := _get_collision_bounds()
+	if _has_visible_area(collision_bounds):
+		return collision_bounds
+
+	var fallback_center = body.global_position if body else global_position
+	return Rect2(fallback_center - DEFAULT_VISUAL_SIZE * 0.5, DEFAULT_VISUAL_SIZE)
+
+func _find_polygon_body() -> Polygon2D:
+	return _find_polygon_body_recursive(body)
+
+func _find_polygon_body_recursive(node: Node) -> Polygon2D:
+	if node == null:
+		return null
+	if node is Polygon2D:
+		return node as Polygon2D
+
+	for child in node.get_children():
+		var polygon_body := _find_polygon_body_recursive(child)
+		if polygon_body:
+			return polygon_body
+	return null
+
+func _get_collision_bounds() -> Rect2:
+	if collision_shape == null or collision_shape.shape == null:
+		return Rect2()
+
+	var local_points := PackedVector2Array()
+	var rectangle_shape := collision_shape.shape as RectangleShape2D
+	if rectangle_shape:
+		var half_size := rectangle_shape.size * 0.5
+		local_points = PackedVector2Array([
+			Vector2(-half_size.x, -half_size.y),
+			Vector2(half_size.x, -half_size.y),
+			Vector2(half_size.x, half_size.y),
+			Vector2(-half_size.x, half_size.y)
+		])
+	else:
+		var circle_shape := collision_shape.shape as CircleShape2D
+		if circle_shape:
+			var radius := circle_shape.radius
+			local_points = PackedVector2Array([
+				Vector2(-radius, -radius),
+				Vector2(radius, -radius),
+				Vector2(radius, radius),
+				Vector2(-radius, radius)
+			])
+
+	return _build_world_rect_from_points(collision_shape, local_points)
+
+func _build_world_rect_from_points(node: Node2D, points: PackedVector2Array) -> Rect2:
+	if node == null or points.is_empty():
+		return Rect2()
+
+	var first_point = node.to_global(points[0])
+	var min_corner = first_point
+	var max_corner = first_point
+
+	for point in points:
+		var world_point = node.to_global(point)
+		min_corner.x = minf(min_corner.x, world_point.x)
+		min_corner.y = minf(min_corner.y, world_point.y)
+		max_corner.x = maxf(max_corner.x, world_point.x)
+		max_corner.y = maxf(max_corner.y, world_point.y)
+
+	return Rect2(min_corner, max_corner - min_corner)
+
+func _has_visible_area(bounds: Rect2) -> bool:
+	return bounds.size.x > 0.0 and bounds.size.y > 0.0
 
 func _resolve_hero() -> Node2D:
 	if hero and is_instance_valid(hero):

@@ -5,7 +5,6 @@ const CombatTargetingRef = preload("res://scripts/combat/combat_targeting.gd")
 const GameServicesRef = preload("res://scripts/core/game_services.gd")
 
 const MAX_ACTIVE_FLOATING_TEXTS := CombatFeedbackControllerRef.MAX_ACTIVE_FLOATING_TEXTS
-const MAX_ACTIVE_ABILITY_ICONS := CombatFeedbackControllerRef.MAX_ACTIVE_ABILITY_ICONS
 const DAMAGE_TEXT_OFFSET := CombatFeedbackControllerRef.DAMAGE_TEXT_OFFSET
 
 @onready var hero: Node2D = $CombatArea/Hero
@@ -20,7 +19,6 @@ var combat_feedback := CombatFeedbackControllerRef.new()
 func _ready() -> void:
 	ability_system = GameServicesRef.get_ability_system(self)
 	combat_feedback.setup(self, ability_effects)
-	combat_feedback.prewarm_ability_impact_icons()
 
 	if wave_manager and wave_manager.has_method("bind_runtime"):
 		wave_manager.bind_runtime(hero, monster_container)
@@ -61,6 +59,7 @@ func capture_debug_screenshot(file_name: String = "main_debug.png") -> String:
 	var absolute_debug_dir = ProjectSettings.globalize_path(debug_dir)
 	DirAccess.make_dir_recursive_absolute(absolute_debug_dir)
 	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
 
 	var image: Image = null
 	var display_name = DisplayServer.get_name()
@@ -78,8 +77,6 @@ func capture_debug_screenshot(file_name: String = "main_debug.png") -> String:
 	if error != OK:
 		push_error("Failed to save screenshot: %s" % absolute_screenshot_path)
 		return ""
-
-	print("Debug screenshot saved to: %s" % absolute_screenshot_path)
 	return absolute_screenshot_path
 
 func _build_debug_layout_image() -> Image:

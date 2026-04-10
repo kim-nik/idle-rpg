@@ -21,12 +21,16 @@ func _run_manual_probe() -> void:
 
 	main_scene._on_ability_triggered("punch", monster, "42", "ability")
 
+	_write_frame_metadata(output_dir, "manual_frame_00.txt", monster, main_scene.get_node("CombatArea/AbilityEffects"))
 	await _capture_frame(main_scene, "manual_frame_00.png")
 	await get_tree().process_frame
+	_write_frame_metadata(output_dir, "manual_frame_01.txt", monster, main_scene.get_node("CombatArea/AbilityEffects"))
 	await _capture_frame(main_scene, "manual_frame_01.png")
 	await get_tree().create_timer(0.1).timeout
+	_write_frame_metadata(output_dir, "manual_frame_02.txt", monster, main_scene.get_node("CombatArea/AbilityEffects"))
 	await _capture_frame(main_scene, "manual_frame_02.png")
 	await get_tree().create_timer(0.3).timeout
+	_write_frame_metadata(output_dir, "manual_frame_03.txt", monster, main_scene.get_node("CombatArea/AbilityEffects"))
 	await _capture_frame(main_scene, "manual_frame_03.png")
 
 	_write_probe_metadata("%s/manual_metadata.txt" % output_dir, monster, main_scene.get_node("CombatArea/AbilityEffects"))
@@ -52,12 +56,16 @@ func _run_runtime_probe() -> void:
 	main_scene.set_process(false)
 
 	ability_system.advance_runtime(4.1)
+	_write_frame_metadata(output_dir, "runtime_frame_00.txt", monster, main_scene.get_node("CombatArea/AbilityEffects"))
 	await _capture_frame(main_scene, "runtime_frame_00.png")
 	await get_tree().process_frame
+	_write_frame_metadata(output_dir, "runtime_frame_01.txt", monster, main_scene.get_node("CombatArea/AbilityEffects"))
 	await _capture_frame(main_scene, "runtime_frame_01.png")
 	await get_tree().create_timer(0.1).timeout
+	_write_frame_metadata(output_dir, "runtime_frame_02.txt", monster, main_scene.get_node("CombatArea/AbilityEffects"))
 	await _capture_frame(main_scene, "runtime_frame_02.png")
 	await get_tree().create_timer(0.3).timeout
+	_write_frame_metadata(output_dir, "runtime_frame_03.txt", monster, main_scene.get_node("CombatArea/AbilityEffects"))
 	await _capture_frame(main_scene, "runtime_frame_03.png")
 
 	_write_probe_metadata("%s/runtime_metadata.txt" % output_dir, monster, main_scene.get_node("CombatArea/AbilityEffects"))
@@ -93,7 +101,6 @@ func _spawn_probe_monster(main_scene: Node, spawn_position: Vector2) -> Node2D:
 	return monster
 
 func _capture_frame(main_scene: Node, file_name: String) -> void:
-	await RenderingServer.frame_post_draw
 	await main_scene.capture_debug_screenshot("ability_icon_probe/%s" % file_name)
 
 func _write_probe_metadata(metadata_path: String, monster: Node2D, ability_effects: Node2D) -> void:
@@ -114,3 +121,34 @@ func _write_probe_metadata(metadata_path: String, monster: Node2D, ability_effec
 				str(icon.global_position),
 				str(icon.get_rendered_size())
 			])
+
+func _write_frame_metadata(output_dir: String, file_name: String, monster: Node2D, ability_effects: Node2D) -> void:
+	var metadata_path = "%s/%s" % [output_dir, file_name]
+	var file = FileAccess.open(metadata_path, FileAccess.WRITE)
+	if file == null:
+		push_error("Failed to write frame metadata: %s" % metadata_path)
+		return
+
+	file.store_line("monster_global_position=%s" % monster.global_position)
+	if monster.has_method("get_visual_bounds"):
+		file.store_line("monster_visual_bounds=%s" % str(monster.get_visual_bounds()))
+
+	for child in ability_effects.get_children():
+		if child is AbilityImpactIcon:
+			var icon = child as AbilityImpactIcon
+			var sprite = icon.get_node_or_null("Sprite2D") as Sprite2D
+			file.store_line("icon_active=%s local=%s global=%s canvas=%s rendered_size=%s" % [
+				str(icon.is_active()),
+				str(icon.position),
+				str(icon.global_position),
+				str(icon.get_global_transform_with_canvas().origin),
+				str(icon.get_rendered_size())
+			])
+			if sprite:
+				file.store_line("sprite_local=%s global=%s canvas=%s scale=%s texture_size=%s" % [
+					str(sprite.position),
+					str(sprite.global_position),
+					str(sprite.get_global_transform_with_canvas().origin),
+					str(sprite.scale),
+					str(sprite.texture.get_size() if sprite.texture else Vector2.ZERO)
+				])
