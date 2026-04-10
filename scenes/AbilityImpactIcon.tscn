@@ -1,7 +1,9 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://cu6ioyykt45kx"]
 
-[ext_resource type="Script" path="res://scripts/ability_impact_icon.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://p0giany0b8ge" path="res://scripts/ability_impact_icon.gd" id="1_script"]
 
-[node name="AbilityImpactIcon" type="Node2D"]
+[node name="AbilityImpactIcon" type="Node2D" unique_id=1159563973]
 visible = false
 script = ExtResource("1_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=506707577]
