@@ -36,6 +36,7 @@ var death_timer: float = 0.0
 var is_attacking: bool = false
 var body_base_position: Vector2 = Vector2.ZERO
 var attack_tween: Tween
+var hero: Node2D
 
 const MONSTER_STATS := {
 	"slime": {"hp": 50.0, "atk": 5.0, "gold": 5.0, "speed": 30.0, "attack_speed": 0.7, "armor": 0.0, "health_regen": 0.0, "color": Color.GREEN},
@@ -47,6 +48,9 @@ const MONSTER_STATS := {
 func _ready() -> void:
 	target_position = global_position
 	body_base_position = body.position
+
+func assign_hero(next_hero: Node2D) -> void:
+	hero = next_hero
 
 func setup(type: String, wave_bonus: float = 1.0) -> void:
 	monster_type = type
@@ -70,6 +74,7 @@ func setup(type: String, wave_bonus: float = 1.0) -> void:
 	visible = true
 	modulate.a = 1.0
 	_reset_attack_pose()
+	_update_health_bar()
 
 func configure_approach(hero_x: float, duration: float = TARGET_REACH_DURATION) -> void:
 	var desired_duration = max(duration, 0.01)
@@ -84,19 +89,20 @@ func _process(delta: float) -> void:
 			queue_free()
 		return
 
-	var hero = get_node_or_null("../../Hero")
-	if hero == null:
+	var active_hero = _resolve_hero()
+	if active_hero == null:
 		return
 
 	apply_regeneration(delta)
+	_update_health_bar()
 
 	var queue_index = _get_queue_index()
-	global_position.y = hero.global_position.y
+	global_position.y = active_hero.global_position.y
 	target_position = Vector2(
-		hero.global_position.x + attack_range + queue_index * QUEUE_SPACING,
-		hero.global_position.y
+		active_hero.global_position.x + attack_range + queue_index * QUEUE_SPACING,
+		active_hero.global_position.y
 	)
-	var horizontal_distance = global_position.x - hero.global_position.x
+	var horizontal_distance = global_position.x - active_hero.global_position.x
 
 	if is_attacking:
 		return
@@ -108,18 +114,16 @@ func _process(delta: float) -> void:
 	if queue_index > 0:
 		return
 
-	horizontal_distance = global_position.x - hero.global_position.x
+	horizontal_distance = global_position.x - active_hero.global_position.x
 	attack_timer += delta
 	if horizontal_distance <= attack_range + 2.0 and attack_timer >= attack_interval:
 		attack_timer = 0.0
-		attack_hero(hero)
+		attack_hero(active_hero)
 
 func take_damage(damage: float) -> bool:
 	current_hp -= damage
-	if health_bar:
-		health_bar.max_value = max_hp
-		health_bar.value = current_hp
-	
+	_update_health_bar()
+
 	if current_hp <= 0:
 		die()
 		return true
@@ -209,3 +213,33 @@ func _get_queue_index() -> int:
 		return a.global_position.x < b.global_position.x
 	)
 	return monsters.find(self)
+
+func get_visual_bounds() -> Rect2:
+	if body is Polygon2D:
+		var polygon_body = body as Polygon2D
+		if not polygon_body.polygon.is_empty():
+			var first_point = polygon_body.to_global(polygon_body.polygon[0])
+			var min_corner = first_point
+			var max_corner = first_point
+			for point in polygon_body.polygon:
+				var world_point = polygon_body.to_global(point)
+				min_corner.x = min(min_corner.x, world_point.x)
+				min_corner.y = min(min_corner.y, world_point.y)
+				max_corner.x = max(max_corner.x, world_point.x)
+				max_corner.y = max(max_corner.y, world_point.y)
+			return Rect2(min_corner, max_corner - min_corner)
+	return Rect2(global_position - Vector2.ONE * 0.5, Vector2.ONE)
+
+func _resolve_hero() -> Node2D:
+	if hero and is_instance_valid(hero):
+		return hero
+
+	var parent_node = get_parent()
+	if parent_node and parent_node.get_parent():
+		hero = parent_node.get_parent().get_node_or_null("Hero") as Node2D
+	return hero
+
+func _update_health_bar() -> void:
+	if health_bar:
+		health_bar.max_value = max_hp
+		health_bar.value = current_hp

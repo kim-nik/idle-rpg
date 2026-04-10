@@ -1,5 +1,7 @@
 extends Node
 
+signal save_data_changed(change_reason: String)
+
 const SAVE_FILE := "user://save.dat"
 const SAVE_VERSION := 4
 const DEFAULT_SAVE_DATA := {
@@ -18,18 +20,39 @@ const DEFAULT_SAVE_DATA := {
 	"equipped_ability_slots": ["", "", "", "", "", "", "", ""]
 }
 
-var save_data := DEFAULT_SAVE_DATA.duplicate(true)
+var save_data := duplicate_default_save_data()
 
 func _ready() -> void:
 	load_game()
 
+func duplicate_default_save_data() -> Dictionary:
+	return DEFAULT_SAVE_DATA.duplicate(true)
+
 func save() -> void:
-	save_data.version = SAVE_VERSION
-	var file := FileAccess.open(SAVE_FILE, FileAccess.WRITE)
-	if file:
-		var json_string := JSON.stringify(save_data)
-		file.store_line(json_string)
-		file.close()
+	_persist("save")
+
+func set_save_field(key: String, value, persist_immediately: bool = false, change_reason: String = "field") -> void:
+	save_data[key] = value
+	if persist_immediately:
+		_persist(change_reason)
+		return
+	_emit_save_data_changed(change_reason)
+
+func add_gold(amount: int, persist_immediately: bool = false) -> int:
+	save_data.gold = max(int(save_data.get("gold", 0)) + amount, 0)
+	if persist_immediately:
+		_persist("gold")
+		return int(save_data.gold)
+	_emit_save_data_changed("gold")
+	return int(save_data.gold)
+
+func add_monsters_killed(count: int = 1, persist_immediately: bool = false) -> int:
+	save_data.monsters_killed = max(int(save_data.get("monsters_killed", 0)) + count, 0)
+	if persist_immediately:
+		_persist("monsters_killed")
+		return int(save_data.monsters_killed)
+	_emit_save_data_changed("monsters_killed")
+	return int(save_data.monsters_killed)
 
 func load_game() -> void:
 	if FileAccess.file_exists(SAVE_FILE):
@@ -43,7 +66,9 @@ func load_game() -> void:
 					save_data = _migrate_save_data(loaded_data)
 			file.close()
 	else:
-		save_data = DEFAULT_SAVE_DATA.duplicate(true)
+		save_data = duplicate_default_save_data()
+
+	_emit_save_data_changed("load")
 
 func _migrate_save_data(loaded_data: Dictionary) -> Dictionary:
 	var working_data := loaded_data.duplicate(true)
@@ -95,12 +120,27 @@ func _migrate_to_v4(loaded_data: Dictionary) -> Dictionary:
 	return migrated_data
 
 func _merge_with_defaults(loaded_data: Dictionary) -> Dictionary:
-	var merged_data := DEFAULT_SAVE_DATA.duplicate(true)
+	var merged_data := duplicate_default_save_data()
 	for key in loaded_data.keys():
 		merged_data[key] = loaded_data[key]
 	merged_data.version = SAVE_VERSION
 	return merged_data
 
 func reset() -> void:
-	save_data = DEFAULT_SAVE_DATA.duplicate(true)
-	save()
+	save_data = duplicate_default_save_data()
+	_persist("reset")
+
+func _persist(change_reason: String) -> void:
+	save_data.version = SAVE_VERSION
+	var file := FileAccess.open(SAVE_FILE, FileAccess.WRITE)
+	if file == null:
+		push_error("Failed to open save file for writing: %s" % SAVE_FILE)
+		return
+
+	var json_string := JSON.stringify(save_data)
+	file.store_line(json_string)
+	file.close()
+	_emit_save_data_changed(change_reason)
+
+func _emit_save_data_changed(change_reason: String) -> void:
+	emit_signal("save_data_changed", change_reason)

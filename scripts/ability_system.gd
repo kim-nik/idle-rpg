@@ -2,7 +2,7 @@ extends Node
 
 signal loadout_changed()
 signal ability_unlocked(ability_id: String)
-signal ability_triggered(ability_id: String, position: Vector2, text_value: String, style_name: String)
+signal ability_triggered(ability_id: String, target: Node2D, text_value: String, style_name: String)
 
 const SLOT_COUNT := 8
 const TRIGGER_PASSIVE := "passive"
@@ -11,6 +11,7 @@ const TRIGGER_ON_HIT := "on_hit"
 const EFFECT_DIRECT_DAMAGE_TARGETS := "direct_damage_targets"
 
 const CombatMathRef = preload("res://scripts/combat_math.gd")
+const GameServicesRef = preload("res://scripts/core/game_services.gd")
 const ABILITY_DEFINITIONS: Array[AbilityDefinition] = [
 	preload("res://resources/abilities/punch.tres"),
 	preload("res://resources/abilities/leg_sweep.tres"),
@@ -44,7 +45,7 @@ func _build_definition_index() -> void:
 		_definitions_by_id[definition.ability_id] = definition
 
 func load_from_save() -> void:
-	var save_manager = get_node("/root/SaveManager")
+	var save_manager = GameServicesRef.require_save_manager(self)
 	if save_manager == null:
 		return
 
@@ -148,7 +149,7 @@ func unlock_ability(ability_id: String) -> bool:
 	if is_unlocked(ability_id):
 		return true
 
-	var save_manager = get_node("/root/SaveManager")
+	var save_manager = GameServicesRef.require_save_manager(self)
 	if save_manager == null or save_manager.save_data.gold < definition.unlock_cost:
 		return false
 
@@ -208,7 +209,7 @@ func get_cooldown_remaining(ability_id: String) -> float:
 	return float(_runtime_cooldowns.get(ability_id, 0.0))
 
 func _persist_loadout() -> void:
-	var save_manager = get_node("/root/SaveManager")
+	var save_manager = GameServicesRef.require_save_manager(self)
 	if save_manager == null:
 		return
 	save_manager.save_data.equipped_ability_slots = _equipped_ability_slots.duplicate()
@@ -341,7 +342,7 @@ func _apply_damage_effect(definition: AbilityDefinition, targets: Array[Node2D])
 		emit_signal(
 			"ability_triggered",
 			definition.ability_id,
-			target.global_position,
+			target,
 			str(int(round(damage_output.final_damage))),
 			"ability"
 		)
