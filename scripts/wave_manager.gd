@@ -25,11 +25,17 @@ const WAVE_SCALE_STEP := 0.10
 const CHAPTER_SCALE_STEP := 0.25
 
 const BOSS_MONSTER_TYPE := "boss"
-const BOSS_HP_MULTIPLIER := 3.0
-const BOSS_DAMAGE_MULTIPLIER := 1.75
-const BOSS_ARMOR_MULTIPLIER := 1.5
-const BOSS_REGEN_MULTIPLIER := 1.5
-const BOSS_FIGHT_DURATION := 30.0
+const WAVE_BOSS_HP_MULTIPLIER := 1.8
+const WAVE_BOSS_DAMAGE_MULTIPLIER := 1.25
+const WAVE_BOSS_ARMOR_MULTIPLIER := 1.2
+const WAVE_BOSS_REGEN_MULTIPLIER := 1.2
+const WAVE_BOSS_FIGHT_DURATION := 20.0
+const SUPER_BOSS_HP_MULTIPLIER := 3.0
+const SUPER_BOSS_DAMAGE_MULTIPLIER := 1.75
+const SUPER_BOSS_ARMOR_MULTIPLIER := 1.5
+const SUPER_BOSS_REGEN_MULTIPLIER := 1.5
+const SUPER_BOSS_FIGHT_DURATION := 30.0
+const BOSS_FIGHT_DURATION := SUPER_BOSS_FIGHT_DURATION
 
 var _progress: CampaignProgressState = CampaignProgressStateRef.new()
 
@@ -63,6 +69,18 @@ var is_in_boss_fight: bool:
 	set(value):
 		_progress.is_in_boss_fight = value
 
+var active_boss_kind: String:
+	get:
+		return _progress.boss_stage_kind
+	set(value):
+		_progress.boss_stage_kind = value
+
+var pending_boss_kind: String:
+	get:
+		return _progress.pending_boss_kind
+	set(value):
+		_progress.pending_boss_kind = value
+
 var selected_wave: int:
 	get:
 		return _progress.selected_wave
@@ -89,6 +107,7 @@ var is_between_waves: bool = false
 
 var _queued_wave: int = -1
 var _queued_boss: bool = false
+var _queued_wave_preserves_pending_boss: bool = false
 
 var _status_message: String:
 	get:
@@ -125,6 +144,7 @@ func load_campaign_from_save() -> void:
 	is_between_waves = false
 	_queued_wave = -1
 	_queued_boss = false
+	_queued_wave_preserves_pending_boss = false
 	spawn_timer = 0.0
 	wave_delay_timer = 0.0
 
@@ -132,8 +152,12 @@ func restart_from_save() -> void:
 	_clear_active_monsters()
 	load_campaign_from_save()
 	_progress.clear_status()
-	if is_in_boss_fight:
-		_begin_boss_fight()
+	if is_in_boss_fight and active_boss_kind != CampaignProgressStateRef.BOSS_KIND_NONE:
+		_begin_boss_fight(active_boss_kind)
+	elif pending_boss_kind == CampaignProgressStateRef.BOSS_KIND_SUPER:
+		_begin_boss_fight(pending_boss_kind)
+	elif pending_boss_kind == CampaignProgressStateRef.BOSS_KIND_WAVE:
+		_begin_regular_wave(current_wave, true)
 	else:
 		_begin_regular_wave(current_wave)
 
@@ -156,8 +180,8 @@ func _process(delta: float) -> void:
 		boss_time_remaining = boss_fight.time_remaining
 		return
 	elif is_in_boss_fight:
-		push_warning("Boss stage flag was active without a live boss. Restoring boss-ready state.")
-		_restore_boss_ready_state()
+		push_warning("Boss stage flag was active without a live boss. Restoring the queued boss state.")
+		_restore_boss_state_after_failure()
 		return
 
 	if enemies_spawned_in_wave >= total_monsters_in_wave or monsters_in_wave >= MAX_ACTIVE_MONSTERS:
@@ -229,16 +253,25 @@ func select_boss() -> bool:
 	return true
 
 func start_selected_target() -> bool:
+	if pending_boss_kind == CampaignProgressStateRef.BOSS_KIND_WAVE:
+		return false
 	_clear_active_monsters()
 	_status_message = ""
 	if selected_boss:
 		if not is_boss_unlocked:
 			return false
-		return _begin_boss_fight()
+		return _begin_boss_fight(CampaignProgressStateRef.BOSS_KIND_SUPER)
 	if selected_wave > highest_unlocked_wave:
 		return false
 	_begin_regular_wave(selected_wave)
 	return true
+
+func start_pending_wave_boss() -> bool:
+	if pending_boss_kind != CampaignProgressStateRef.BOSS_KIND_WAVE or is_in_boss_fight:
+		return false
+	_clear_active_monsters()
+	_status_message = ""
+	return _begin_boss_fight(CampaignProgressStateRef.BOSS_KIND_WAVE)
 
 func handle_hero_defeat(defeat_reason: String = "hero_defeat") -> void:
 	_clear_active_monsters()
@@ -249,6 +282,7 @@ func handle_hero_defeat(defeat_reason: String = "hero_defeat") -> void:
 	is_between_waves = false
 	_queued_wave = -1
 	_queued_boss = false
+	_queued_wave_preserves_pending_boss = false
 	spawn_timer = 0.0
 	wave_delay_timer = 0.0
 	enemies_spawned_in_wave = 0
@@ -301,7 +335,7 @@ func _on_regular_monster_died(gold_reward: int, _monster: Node2D = null) -> void
 		_complete_regular_wave()
 
 func _complete_regular_wave() -> void:
-	var transition = _progress.complete_regular_wave(get_auto_next_wave(), get_auto_start_boss())
+	var transition = _progress.complete_regular_wave(get_auto_start_boss())
 	var completed_wave = int(transition.get("completed_wave", current_wave))
 	is_wave_active = false
 	is_between_waves = true
@@ -315,8 +349,10 @@ func _complete_regular_wave() -> void:
 	emit_signal("wave_completed", completed_wave)
 
 func _complete_boss() -> void:
-	var transition = _progress.complete_boss()
-	var completed_chapter = int(transition.get("completed_chapter", current_chapter))
+	var completed_chapter = 0
+	var finishing_super_boss = active_boss_kind == CampaignProgressStateRef.BOSS_KIND_SUPER
+	var transition = _progress.resolve_boss_victory(get_auto_next_wave())
+	completed_chapter = int(transition.get("completed_chapter", 0))
 	is_wave_active = false
 	is_between_waves = true
 	boss_fight.clear()
@@ -328,13 +364,14 @@ func _complete_boss() -> void:
 	enemies_spawned_in_wave = 0
 	monsters_in_wave = 0
 
-	_queue_regular_wave(int(transition.get("queue_wave", 1)))
-	_persist_campaign_state("chapter_complete")
-	emit_signal("chapter_completed", completed_chapter)
+	_queue_regular_wave(int(transition.get("queue_wave", current_wave)))
+	_persist_campaign_state("boss_complete")
+	if finishing_super_boss and completed_chapter > 0:
+		emit_signal("chapter_completed", completed_chapter)
 
-func _begin_regular_wave(wave_number: int) -> void:
+func _begin_regular_wave(wave_number: int, preserve_pending_wave_boss: bool = false) -> void:
 	_reset_hero_combat_state()
-	_progress.begin_regular_wave(wave_number)
+	_progress.begin_regular_wave(wave_number, preserve_pending_wave_boss)
 	boss_fight.clear()
 	boss_time_remaining = 0.0
 	is_wave_active = true
@@ -343,6 +380,7 @@ func _begin_regular_wave(wave_number: int) -> void:
 	wave_delay_timer = 0.0
 	_queued_wave = -1
 	_queued_boss = false
+	_queued_wave_preserves_pending_boss = false
 	monsters_in_wave = 0
 	monsters_killed = 0
 	enemies_spawned_in_wave = 0
@@ -355,38 +393,37 @@ func _begin_regular_wave(wave_number: int) -> void:
 	_persist_campaign_state("wave_start")
 	emit_signal("wave_started", current_wave)
 
-func _begin_boss_fight() -> bool:
+func _begin_boss_fight(kind: String) -> bool:
 	_reset_hero_combat_state()
 	_resolve_runtime_nodes()
+	var boss_config = _get_boss_config(kind)
+	if boss_config.is_empty():
+		push_warning("Boss fight start failed: unsupported boss kind '%s'" % kind)
+		return false
 	if monster_container == null:
 		push_warning("Boss fight start failed: monster container is unavailable")
-		_restore_boss_ready_state("Boss start failed")
+		_restore_boss_state_after_failure("%s start failed" % boss_config.label)
 		return false
 
 	var active_hero = _get_hero()
 	var boss_monster = boss_fight.start(
 		current_chapter,
-		BOSS_FIGHT_DURATION,
+		float(boss_config.duration),
 		MONSTER_SCENE,
 		monster_container,
 		active_hero,
 		DEFAULT_MONSTER_SPAWN_X,
 		DEFAULT_MONSTER_SPAWN_Y,
 		BOSS_MONSTER_TYPE,
-		_get_regular_wave_bonus(WAVES_PER_CHAPTER),
-		{
-			"max_hp": BOSS_HP_MULTIPLIER,
-			"attack_damage": BOSS_DAMAGE_MULTIPLIER,
-			"armor": BOSS_ARMOR_MULTIPLIER,
-			"health_regen": BOSS_REGEN_MULTIPLIER
-		}
+		_get_regular_wave_bonus(current_wave),
+		boss_config.stat_multipliers
 	)
 	if boss_monster == null:
 		push_warning("Boss fight start failed: boss monster could not be instantiated")
-		_restore_boss_ready_state("Boss start failed")
+		_restore_boss_state_after_failure("%s start failed" % boss_config.label)
 		return false
 
-	_progress.begin_boss_fight()
+	_progress.begin_boss_fight(kind)
 	is_wave_active = true
 	is_between_waves = false
 	spawn_timer = 0.0
@@ -397,7 +434,7 @@ func _begin_boss_fight() -> bool:
 	monsters_killed = 0
 	enemies_spawned_in_wave = 0
 	total_monsters_in_wave = 1
-	boss_time_remaining = BOSS_FIGHT_DURATION
+	boss_time_remaining = float(boss_config.duration)
 
 	var save_manager = GameServicesRef.require_save_manager(self)
 	if save_manager:
@@ -411,12 +448,13 @@ func _begin_boss_fight() -> bool:
 	emit_signal("monster_spawned", boss_monster)
 	return true
 
-func _queue_regular_wave(wave_number: int) -> void:
+func _queue_regular_wave(wave_number: int, preserve_pending_wave_boss: bool = false) -> void:
 	is_between_waves = true
 	is_wave_active = false
 	wave_delay_timer = 0.0
 	_queued_wave = clampi(wave_number, 1, WAVES_PER_CHAPTER)
 	_queued_boss = false
+	_queued_wave_preserves_pending_boss = preserve_pending_wave_boss
 
 func _queue_boss_fight() -> void:
 	is_between_waves = true
@@ -424,19 +462,25 @@ func _queue_boss_fight() -> void:
 	wave_delay_timer = 0.0
 	_queued_wave = -1
 	_queued_boss = true
+	_queued_wave_preserves_pending_boss = false
 
 func _consume_queued_transition() -> void:
 	is_between_waves = false
 	wave_delay_timer = 0.0
 	if _queued_boss:
 		_queued_boss = false
-		if not _begin_boss_fight():
-			_begin_regular_wave(WAVES_PER_CHAPTER)
+		var queued_kind = pending_boss_kind
+		if queued_kind == CampaignProgressStateRef.BOSS_KIND_NONE:
+			queued_kind = CampaignProgressStateRef.BOSS_KIND_WAVE
+		if not _begin_boss_fight(queued_kind):
+			_restore_boss_state_after_failure()
 		return
 	var queued_wave = _queued_wave
+	var preserve_pending_wave_boss = _queued_wave_preserves_pending_boss
 	_queued_wave = -1
+	_queued_wave_preserves_pending_boss = false
 	if queued_wave > 0:
-		_begin_regular_wave(queued_wave)
+		_begin_regular_wave(queued_wave, preserve_pending_wave_boss)
 
 func _persist_campaign_state(_change_reason: String) -> void:
 	var save_manager = GameServicesRef.require_save_manager(self)
@@ -467,10 +511,13 @@ func _get_regular_wave_multiplier(wave_number: int) -> float:
 
 func _queue_campaign_transition(transition: Dictionary) -> void:
 	match String(transition.get("queue_kind", "regular_wave")):
-		"boss_fight":
+		"wave_boss", "super_boss", "boss_fight":
 			_queue_boss_fight()
 		_:
-			_queue_regular_wave(int(transition.get("queue_wave", current_wave)))
+			_queue_regular_wave(
+				int(transition.get("queue_wave", current_wave)),
+				bool(transition.get("preserve_pending_wave_boss", false))
+			)
 
 func _get_hero() -> Node2D:
 	_resolve_runtime_nodes()
@@ -545,18 +592,49 @@ func _is_boss_stage_active() -> bool:
 		and boss_fight.get_boss_monster() != null \
 		and is_instance_valid(boss_fight.get_boss_monster())
 
-func _restore_boss_ready_state(status_message: String = "Boss unlocked") -> void:
+func _restore_boss_state_after_failure(status_message: String = "Boss start failed") -> void:
 	is_wave_active = false
 	is_between_waves = false
 	spawn_timer = 0.0
 	wave_delay_timer = 0.0
 	_queued_wave = -1
 	_queued_boss = false
+	_queued_wave_preserves_pending_boss = false
 	monsters_in_wave = 0
 	monsters_killed = 0
 	enemies_spawned_in_wave = 0
 	total_monsters_in_wave = ENEMIES_PER_WAVE
 	boss_time_remaining = 0.0
 	boss_fight.clear()
-	_progress.restore_boss_ready(status_message)
-	_persist_campaign_state("boss_ready_restore")
+	if active_boss_kind == CampaignProgressStateRef.BOSS_KIND_WAVE or pending_boss_kind == CampaignProgressStateRef.BOSS_KIND_WAVE:
+		_progress.restore_wave_boss_pending(status_message)
+	else:
+		_progress.restore_super_boss_ready(status_message)
+	_persist_campaign_state("boss_state_restore")
+
+func _get_boss_config(kind: String) -> Dictionary:
+	match kind:
+		CampaignProgressStateRef.BOSS_KIND_WAVE:
+			return {
+				"duration": WAVE_BOSS_FIGHT_DURATION,
+				"label": "Wave Boss",
+				"stat_multipliers": {
+					"max_hp": WAVE_BOSS_HP_MULTIPLIER,
+					"attack_damage": WAVE_BOSS_DAMAGE_MULTIPLIER,
+					"armor": WAVE_BOSS_ARMOR_MULTIPLIER,
+					"health_regen": WAVE_BOSS_REGEN_MULTIPLIER
+				}
+			}
+		CampaignProgressStateRef.BOSS_KIND_SUPER:
+			return {
+				"duration": SUPER_BOSS_FIGHT_DURATION,
+				"label": "Super Boss",
+				"stat_multipliers": {
+					"max_hp": SUPER_BOSS_HP_MULTIPLIER,
+					"attack_damage": SUPER_BOSS_DAMAGE_MULTIPLIER,
+					"armor": SUPER_BOSS_ARMOR_MULTIPLIER,
+					"health_regen": SUPER_BOSS_REGEN_MULTIPLIER
+				}
+			}
+		_:
+			return {}

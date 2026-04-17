@@ -117,6 +117,7 @@ const SPECIAL_BUTTON_CONFIGS := [
 ]
 
 @onready var top_wave_label: Label = $TopWaveBanner/TopWaveLabel
+@onready var wave_boss_button: Button = $TopWaveBanner/WaveBossButton
 @onready var gold_label: Label = $Panel/MarginContainer/Content/StatsContainer/GoldLabel
 @onready var wave_label: Label = $Panel/MarginContainer/Content/StatsContainer/WaveLabel
 @onready var campaign_status_label: Label = $Panel/MarginContainer/Content/StatsContainer/CampaignStatusLabel
@@ -216,6 +217,7 @@ func _ready() -> void:
 	_bind_map_buttons()
 	_bind_settings_buttons()
 	_bind_tab_buttons()
+	_bind_top_banner_buttons()
 	_connect_state_signals()
 	bind_runtime(_resolve_hero(), _resolve_wave_manager(), null)
 	set_active_tab(TAB_UPGRADES)
@@ -348,6 +350,9 @@ func _bind_tab_buttons() -> void:
 		set_active_tab(TAB_SETTINGS)
 	)
 
+func _bind_top_banner_buttons() -> void:
+	_register_scrollable_button(wave_boss_button, _on_wave_boss_pressed)
+
 func _connect_state_signals() -> void:
 	_connect_signal_once(save_manager, "save_data_changed", Callable(self, "_on_external_state_changed"))
 	_connect_signal_once(upgrade_system, "upgrades_changed", Callable(self, "_on_external_state_changed"))
@@ -442,7 +447,7 @@ func _update_ui() -> void:
 	var campaign_state = _refresh_campaign_state()
 	if gold_label:
 		gold_label.text = "Gold: %d" % int(save_manager.save_data.get("gold", 0))
-	_campaign_ui.update_summary_labels(top_wave_label, wave_label, campaign_status_label, campaign_state)
+	_campaign_ui.update_summary_labels(top_wave_label, wave_boss_button, wave_label, campaign_status_label, campaign_state)
 
 	var upgrades = upgrade_system.get_all_upgrades()
 	for config in UPGRADE_BUTTON_CONFIGS:
@@ -663,6 +668,12 @@ func _on_map_boss_pressed() -> void:
 func _on_map_start_selected_pressed() -> void:
 	if wave_manager and is_instance_valid(wave_manager) and wave_manager.has_method("start_selected_target"):
 		wave_manager.start_selected_target()
+	_request_refresh()
+	_update_ui()
+
+func _on_wave_boss_pressed() -> void:
+	if wave_manager and is_instance_valid(wave_manager) and wave_manager.has_method("start_pending_wave_boss"):
+		wave_manager.start_pending_wave_boss()
 	_request_refresh()
 	_update_ui()
 

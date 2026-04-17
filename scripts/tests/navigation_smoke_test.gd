@@ -62,23 +62,24 @@ func run(environment) -> Array[String]:
 	_expect(wave_manager.selected_wave == 2, "Wave 2 tap did not update WaveManager selection", failures)
 
 	if wave_manager:
+		environment.save_manager.save_data.setting_auto_start_boss = false
 		wave_manager.current_chapter = 1
-		wave_manager.current_wave = 10
-		wave_manager.highest_unlocked_wave = 10
-		wave_manager.selected_wave = 10
+		wave_manager.current_wave = 4
+		wave_manager.highest_unlocked_wave = 4
+		wave_manager.selected_wave = 4
 		wave_manager.selected_boss = false
-		wave_manager.is_boss_unlocked = true
+		wave_manager.pending_boss_kind = "wave"
+		wave_manager.active_boss_kind = ""
+		wave_manager.is_boss_unlocked = false
 		wave_manager.is_in_boss_fight = false
 		wave_manager._persist_campaign_state("nav_boss_touch")
 		ui._update_ui()
 
-	await _tap_button(environment, ui.map_boss_button, 1, Vector2(44, 44))
-	_expect(wave_manager.selected_boss, "Boss button tap did not select the boss encounter", failures)
-	await _tap_button(environment, ui.map_start_selected_button, 2, Vector2(48, 48))
+	await _tap_button(environment, ui.wave_boss_button, 1, Vector2(44, 44))
 	await environment.runner.get_tree().process_frame
-	_expect(wave_manager.is_in_boss_fight, "Start Selected tap did not enter boss fight state", failures)
+	_expect(wave_manager.is_in_boss_fight, "Boss banner tap did not enter wave boss fight state", failures)
 	var boss_container = environment.get_monster_container()
-	_expect(boss_container.get_child_count() == 1, "Boss start from map tap did not spawn the boss", failures)
+	_expect(boss_container.get_child_count() == 1, "Boss banner tap did not spawn the boss", failures)
 
 	ui.settings_tab_button.emit_signal("pressed")
 	await environment.runner.get_tree().process_frame

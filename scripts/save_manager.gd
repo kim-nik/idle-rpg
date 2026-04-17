@@ -3,7 +3,7 @@ extends Node
 signal save_data_changed(change_reason: String)
 
 const SAVE_FILE := "user://save.dat"
-const SAVE_VERSION := 6
+const SAVE_VERSION := 7
 const DEFAULT_SAVE_DATA := {
 	"version": SAVE_VERSION,
 	"gold": 0,
@@ -19,6 +19,8 @@ const DEFAULT_SAVE_DATA := {
 	"campaign_chapter": 1,
 	"campaign_wave": 1,
 	"campaign_in_boss": false,
+	"campaign_active_boss_kind": "",
+	"campaign_pending_boss_kind": "",
 	"campaign_highest_unlocked_wave": 1,
 	"campaign_highest_cleared_chapter": 0,
 	"campaign_boss_unlocked": false,
@@ -101,6 +103,9 @@ func _migrate_save_data(loaded_data: Dictionary) -> Dictionary:
 		source_version = 5
 	if source_version < 6:
 		working_data = _migrate_to_v6(working_data)
+		source_version = 6
+	if source_version < 7:
+		working_data = _migrate_to_v7(working_data)
 
 	return _merge_with_defaults(working_data)
 
@@ -161,6 +166,15 @@ func _migrate_to_v6(loaded_data: Dictionary) -> Dictionary:
 	if not migrated_data.has("campaign_highest_cleared_chapter"):
 		migrated_data.campaign_highest_cleared_chapter = max(int(migrated_data.get("campaign_chapter", 1)) - 1, 0)
 	migrated_data.version = 6
+	return migrated_data
+
+func _migrate_to_v7(loaded_data: Dictionary) -> Dictionary:
+	var migrated_data := loaded_data.duplicate(true)
+	if not migrated_data.has("campaign_active_boss_kind"):
+		migrated_data.campaign_active_boss_kind = "super" if bool(migrated_data.get("campaign_in_boss", false)) else ""
+	if not migrated_data.has("campaign_pending_boss_kind"):
+		migrated_data.campaign_pending_boss_kind = ""
+	migrated_data.version = 7
 	return migrated_data
 
 func _merge_with_defaults(loaded_data: Dictionary) -> Dictionary:

@@ -1,7 +1,7 @@
 extends "res://scripts/tests/test_case.gd"
 
 const EXPECTED_DEFAULT_SAVE := {
-	"version": 6,
+	"version": 7,
 	"gold": 0,
 	"damage_level": 1,
 	"attack_speed_level": 1,
@@ -15,6 +15,8 @@ const EXPECTED_DEFAULT_SAVE := {
 	"campaign_chapter": 1,
 	"campaign_wave": 1,
 	"campaign_in_boss": false,
+	"campaign_active_boss_kind": "",
+	"campaign_pending_boss_kind": "",
 	"campaign_highest_unlocked_wave": 1,
 	"campaign_highest_cleared_chapter": 0,
 	"campaign_boss_unlocked": false,
@@ -93,7 +95,7 @@ func run(environment) -> Array[String]:
 	save_manager.save()
 	save_manager.load_game()
 	ability_system.load_from_save()
-	_expect(save_manager.save_data.version == 6, "Save migration did not stamp the current version", failures)
+	_expect(save_manager.save_data.version == 7, "Save migration did not stamp the current version", failures)
 	_expect(save_manager.save_data.damage_level == 1, "Save migration did not restore missing damage level", failures)
 	_expect(save_manager.save_data.armor_level == 1, "Save migration did not restore missing armor level", failures)
 	_expect(save_manager.save_data.health_regen_level == 1, "Save migration did not restore missing regen level", failures)
@@ -139,7 +141,7 @@ func run(environment) -> Array[String]:
 	}
 	save_manager.save()
 	save_manager.load_game()
-	_expect(save_manager.save_data.version == 6, "Versioned migration did not advance the save version", failures)
+	_expect(save_manager.save_data.version == 7, "Versioned migration did not advance the save version", failures)
 	_expect(save_manager.save_data.armor_level == 1, "Versioned migration did not add armor level", failures)
 	_expect(save_manager.save_data.health_regen_level == 1, "Versioned migration did not add regen level", failures)
 	_expect(save_manager.save_data.wave == 3, "Versioned migration did not remap the legacy wave alias", failures)

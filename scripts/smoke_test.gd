@@ -21,6 +21,10 @@ func _ready() -> void:
 
 func run_smoke_test() -> void:
 	print("=== SMOKE TEST STARTED ===")
+	if not _verify_script_compilation():
+		push_error("Smoke test FAILED during script compilation preflight")
+		get_tree().quit(1)
+		return
 
 	var environment_script = load("res://scripts/tests/test_environment.gd")
 	if environment_script == null:
@@ -70,3 +74,37 @@ func run_smoke_test() -> void:
 	else:
 		print("Smoke test PASSED")
 		get_tree().quit(0)
+
+func _verify_script_compilation() -> bool:
+	var script_paths: Array[String] = []
+	_collect_gd_scripts("res://scripts", script_paths)
+	script_paths.sort()
+
+	var all_loaded := true
+	for script_path in script_paths:
+		var script_resource = load(script_path)
+		if script_resource == null:
+			all_loaded = false
+			push_error("Failed to load script during smoke preflight: %s" % script_path)
+	return all_loaded
+
+func _collect_gd_scripts(path: String, output: Array[String]) -> void:
+	var directory := DirAccess.open(path)
+	if directory == null:
+		push_error("Smoke preflight could not open directory: %s" % path)
+		return
+
+	directory.list_dir_begin()
+	var entry := directory.get_next()
+	while not entry.is_empty():
+		if entry.begins_with("."):
+			entry = directory.get_next()
+			continue
+
+		var child_path = "%s/%s" % [path, entry]
+		if directory.current_is_dir():
+			_collect_gd_scripts(child_path, output)
+		elif entry.ends_with(".gd"):
+			output.append(child_path)
+		entry = directory.get_next()
+	directory.list_dir_end()
