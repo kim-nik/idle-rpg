@@ -30,6 +30,7 @@ func run(environment) -> Array[String]:
 	ui._update_ui()
 	_expect(ui.gold_label.text == "Gold: 0", "Gold label did not show the baseline state", failures)
 	_expect(ui.top_wave_label.text == "Chapter 1 - Wave 1/10", "Top wave label did not show the baseline wave", failures)
+	_expect(not ui.wave_boss_button.visible, "Wave boss button should be hidden by default", failures)
 	_expect(ui.wave_label.text == "Defeated 0/20", "Monster progress label did not show baseline progress", failures)
 	_expect(ui.active_tab == ui.TAB_UPGRADES, "Upgrades tab should be active by default", failures)
 	_expect(ui.damage_btn.disabled, "Damage button should be disabled without gold", failures)
@@ -83,7 +84,7 @@ func run(environment) -> Array[String]:
 	_expect(not ui.map_wave_buttons[0].disabled, "Wave 1 should be unlocked by default", failures)
 	_expect(ui.map_wave_buttons[1].disabled, "Wave 2 should stay locked by default", failures)
 	_expect(ui.map_start_selected_button != null and not ui.map_start_selected_button.disabled, "Start button should be ready for Wave 1", failures)
-	_expect(ui.map_boss_button.disabled, "Boss button should be locked at the start", failures)
+	_expect(ui.map_boss_button.disabled, "Super Boss button should be locked at the start", failures)
 
 	wave_manager.highest_unlocked_wave = 3
 	wave_manager.current_wave = 2
@@ -94,18 +95,35 @@ func run(environment) -> Array[String]:
 	_expect(wave_manager.selected_wave == 3, "Map wave selection did not update WaveManager", failures)
 	_expect(ui.map_wave_buttons[2].button_pressed, "Wave 3 button did not become selected", failures)
 
+	wave_manager.current_wave = 3
+	wave_manager.pending_boss_kind = "wave"
+	wave_manager.is_in_boss_fight = false
+	ui._update_ui()
+	_expect(ui.wave_boss_button.visible, "Wave boss button should appear when a wave boss is pending", failures)
+	ui._on_wave_boss_pressed()
+	_expect(wave_manager.is_in_boss_fight, "Wave boss button did not start the pending wave boss", failures)
+	ui._update_ui()
+	_expect(not ui.wave_boss_button.visible, "Wave boss button should hide after it is pressed", failures)
+
+	wave_manager.is_in_boss_fight = false
+	wave_manager.active_boss_kind = ""
+	wave_manager.pending_boss_kind = ""
+
+	wave_manager.current_wave = 10
+	wave_manager.highest_unlocked_wave = 10
+	wave_manager.selected_wave = 10
 	wave_manager.is_boss_unlocked = true
 	wave_manager.select_boss()
 	ui._update_ui()
-	_expect(not ui.map_boss_button.disabled, "Boss button should unlock after boss access is granted", failures)
-	_expect(ui.map_boss_button.button_pressed, "Boss button should become selected", failures)
+	_expect(not ui.map_boss_button.disabled, "Super Boss button should unlock after boss access is granted", failures)
+	_expect(ui.map_boss_button.button_pressed, "Super Boss button should become selected", failures)
 	ui._on_map_start_selected_pressed()
 	_expect(wave_manager.is_in_boss_fight, "Starting the selected boss did not enter boss fight state", failures)
 	ui._update_ui()
-	_expect(ui.top_wave_label.text == "Chapter 1 - Boss", "Top wave label did not switch to boss state", failures)
+	_expect(ui.top_wave_label.text == "Chapter 1 - Super Boss", "Top wave label did not switch to super boss state", failures)
 	_expect(ui.wave_label.text == "Boss Fight", "Boss fight should replace the kill counter with a boss indicator", failures)
 	_expect(
-		ui.campaign_status_label.text.begins_with("Boss timer: 30.0s"),
+		ui.campaign_status_label.text.begins_with("Super Boss timer: 30.0s"),
 		"Boss fight should expose the 30 second timer in the UI",
 		failures
 	)
@@ -171,6 +189,8 @@ func run(environment) -> Array[String]:
 	save_manager.save_data.campaign_chapter = 3
 	save_manager.save_data.campaign_wave = 8
 	save_manager.save_data.campaign_highest_unlocked_wave = 8
+	save_manager.save_data.campaign_active_boss_kind = ""
+	save_manager.save_data.campaign_pending_boss_kind = ""
 	save_manager.save_data.campaign_highest_cleared_chapter = 2
 	save_manager.save_data.campaign_boss_unlocked = true
 	save_manager.save_data.campaign_selected_wave = 8
@@ -209,6 +229,8 @@ func run(environment) -> Array[String]:
 		"Reset did not restore cleared chapter marker",
 		failures
 	)
+	_expect(save_manager.save_data.campaign_active_boss_kind.is_empty(), "Reset did not clear active boss kind", failures)
+	_expect(save_manager.save_data.campaign_pending_boss_kind.is_empty(), "Reset did not clear pending boss kind", failures)
 	_expect(not save_manager.save_data.campaign_boss_unlocked, "Reset did not clear boss unlock state", failures)
 	_expect(save_manager.save_data.campaign_selected_wave == 1, "Reset did not restore selected wave", failures)
 	_expect(not save_manager.save_data.campaign_selected_boss, "Reset did not clear selected boss state", failures)

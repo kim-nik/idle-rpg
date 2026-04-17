@@ -27,13 +27,13 @@ text = "After a win, go to the next unlocked regular wave."
 custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Auto Start Boss"
+text = "Auto Start Super Boss"
 
 [node name="AutoStartBossDescription" type="Label" parent="."]
 layout_mode = 2
 autowrap_mode = 3
 theme_override_font_sizes/font_size = 18
-text = "After Wave 10, start the boss automatically."
+text = "After Wave 10, start the super boss automatically."
 
 [node name="BottomSpacer" type="Control" parent="."]
 custom_minimum_size = Vector2(0, 320)

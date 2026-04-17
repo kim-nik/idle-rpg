@@ -31,7 +31,7 @@ text = "Cleared Chapters: 0"
 layout_mode = 2
 autowrap_mode = 3
 theme_override_font_sizes/font_size = 18
-text = "Auto Next Wave: ON | Auto Start Boss: OFF"
+text = "Auto Next Wave: ON | Auto Start Super Boss: OFF"
 
 [node name="WaveGrid" type="GridContainer" parent="."]
 layout_mode = 2
@@ -114,7 +114,7 @@ toggle_mode = true
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Boss"
+text = "Super Boss"
 toggle_mode = true
 
 [node name="StartSelectedButton" type="Button" parent="."]
