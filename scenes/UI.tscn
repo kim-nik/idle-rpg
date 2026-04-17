@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3 uid="uid://ui_panel"]
+[gd_scene load_steps=7 format=3 uid="uid://ui_panel"]
 
 [ext_resource type="Script" path="res://scripts/ui_controller.gd" id="1_ui"]
 [ext_resource type="PackedScene" path="res://scenes/UpgradesTab.tscn" id="2_upgrades"]
 [ext_resource type="PackedScene" path="res://scenes/AbilitiesTab.tscn" id="3_abilities"]
 [ext_resource type="PackedScene" path="res://scenes/MapTab.tscn" id="4_map"]
+[ext_resource type="PackedScene" path="res://scenes/SettingsTab.tscn" id="5_settings"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_popup_panel"]
 bg_color = Color(0.12, 0.14, 0.18, 1)
@@ -88,7 +89,12 @@ text = "Gold: 0"
 [node name="WaveLabel" type="Label" parent="Panel/MarginContainer/Content/StatsContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
-text = "Monsters: 0/10"
+text = "Defeated 0/20"
+
+[node name="CampaignStatusLabel" type="Label" parent="Panel/MarginContainer/Content/StatsContainer"]
+layout_mode = 2
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 18
 
 [node name="HeroStatsLabel" type="Label" parent="Panel/MarginContainer/Content/StatsContainer"]
 layout_mode = 2
@@ -144,6 +150,18 @@ horizontal_scroll_mode = 0
 
 [node name="MapTab" parent="Panel/MarginContainer/Content/TabContentContainer/TabViewport/MapScroll" instance=ExtResource("4_map")]
 
+[node name="SettingsScroll" type="ScrollContainer" parent="Panel/MarginContainer/Content/TabContentContainer/TabViewport"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="SettingsTab" parent="Panel/MarginContainer/Content/TabContentContainer/TabViewport/SettingsScroll" instance=ExtResource("5_settings")]
+
 [node name="TabBar" type="HBoxContainer" parent="Panel/MarginContainer/Content"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -169,6 +187,13 @@ layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 64)
 text = "Map"
+toggle_mode = true
+
+[node name="SettingsTabButton" type="Button" parent="Panel/MarginContainer/Content/TabBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 64)
+text = "Settings"
 toggle_mode = true
 
 [node name="PopupOverlay" type="ColorRect" parent="."]

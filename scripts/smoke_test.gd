@@ -6,6 +6,7 @@ const TEST_CASE_SCRIPTS := [
 	"res://scripts/tests/ui_test.gd",
 	"res://scripts/tests/navigation_smoke_test.gd",
 	"res://scripts/tests/persistence_test.gd",
+	"res://scripts/tests/boss_fight_test.gd",
 	"res://scripts/tests/combat_wave_test.gd",
 	"res://scripts/tests/combat_feedback_test.gd",
 	"res://scripts/tests/ability_system_test.gd"

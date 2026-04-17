@@ -30,14 +30,21 @@ static func build_hero_stats(upgrade_system: Node, bonus_stats: Dictionary = {})
 	for stat_name in bonus_stats.keys():
 		hero_stats[stat_name] = float(hero_stats.get(stat_name, 0.0)) + float(bonus_stats[stat_name])
 	return hero_stats
-static func build_monster_stats(monster_config: Dictionary, wave_bonus: float = 1.0) -> Dictionary:
-	return create_stat_block({
+static func build_monster_stats(
+	monster_config: Dictionary,
+	wave_bonus: float = 1.0,
+	stat_multipliers: Dictionary = {}
+) -> Dictionary:
+	var monster_stats = create_stat_block({
 		"max_hp": monster_config.get("hp", DEFAULT_STATS.max_hp) * wave_bonus,
 		"attack_damage": monster_config.get("atk", DEFAULT_STATS.attack_damage) * wave_bonus,
 		"attack_speed": monster_config.get("attack_speed", 1.0),
 		"armor": monster_config.get("armor", 0.0) * wave_bonus,
 		"health_regen": monster_config.get("health_regen", 0.0) * wave_bonus
 	})
+	for stat_name in stat_multipliers.keys():
+		monster_stats[stat_name] = float(monster_stats.get(stat_name, 0.0)) * float(stat_multipliers[stat_name])
+	return monster_stats
 
 static func get_attack_interval(stats: Dictionary) -> float:
 	return 1.0 / max(float(stats.get("attack_speed", 1.0)), 0.01)

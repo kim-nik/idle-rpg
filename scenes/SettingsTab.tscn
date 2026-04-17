@@ -1,0 +1,40 @@
+[gd_scene format=3]
+
+[node name="SettingsTab" type="VBoxContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Settings"
+
+[node name="AutoNextWaveToggle" type="CheckButton" parent="."]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Auto Next Wave"
+button_pressed = true
+
+[node name="AutoNextWaveDescription" type="Label" parent="."]
+layout_mode = 2
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 18
+text = "After a win, go to the next unlocked regular wave."
+
+[node name="AutoStartBossToggle" type="CheckButton" parent="."]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Auto Start Boss"
+
+[node name="AutoStartBossDescription" type="Label" parent="."]
+layout_mode = 2
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 18
+text = "After Wave 10, start the boss automatically."
+
+[node name="BottomSpacer" type="Control" parent="."]
+custom_minimum_size = Vector2(0, 320)
+layout_mode = 2

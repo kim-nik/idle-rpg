@@ -180,3 +180,6 @@ func _reset_attack_pose(clear_attack_state: bool = true) -> void:
 		is_attacking = false
 	if body:
 		body.position = body_base_position
+
+func cancel_attack() -> void:
+	_reset_attack_pose()

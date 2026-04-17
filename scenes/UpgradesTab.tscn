@@ -192,7 +192,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 88)
 theme_override_font_sizes/font_size = 28
-text = "Debug +100 Gold"
+text = "Debug +100K Gold"
 
 [node name="DebugGoldX10Button" type="Button" parent="UpgradeContainer/DebugGoldRow"]
 layout_mode = 2

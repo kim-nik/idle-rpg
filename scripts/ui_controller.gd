@@ -1,18 +1,19 @@
 extends CanvasLayer
 
-signal upgrade_clicked(upgrade_name: String)
-
 const GameServicesRef = preload("res://scripts/core/game_services.gd")
 const ScrollableButtonHandlerRef = preload("res://scripts/ui/scrollable_button_handler.gd")
+const CampaignUiPresenterRef = preload("res://scripts/ui/campaign_ui_presenter.gd")
 
 const TAB_UPGRADES := "upgrades"
 const TAB_ABILITIES := "abilities"
 const TAB_MAP := "map"
+const TAB_SETTINGS := "settings"
 const LIVE_REFRESH_INTERVAL := 0.1
 const ABILITY_TILE_SCRIPT := preload("res://scripts/ui/ability_tile_button.gd")
 const ABILITY_TILE_SIZE := Vector2(0, 144)
 const ABILITY_TILE_EMPTY_TEXT := "Empty"
 const ABILITY_NAME_MAX_CHARS := 12
+const DEBUG_GOLD_GRANT := 100000
 const UPGRADE_BUTTON_CONFIGS := [
 	{
 		"upgrade_id": "damage",
@@ -118,18 +119,23 @@ const SPECIAL_BUTTON_CONFIGS := [
 @onready var top_wave_label: Label = $TopWaveBanner/TopWaveLabel
 @onready var gold_label: Label = $Panel/MarginContainer/Content/StatsContainer/GoldLabel
 @onready var wave_label: Label = $Panel/MarginContainer/Content/StatsContainer/WaveLabel
+@onready var campaign_status_label: Label = $Panel/MarginContainer/Content/StatsContainer/CampaignStatusLabel
 @onready var hero_stats_label: Label = $Panel/MarginContainer/Content/StatsContainer/HeroStatsLabel
 
 @onready var upgrades_scroll: ScrollContainer = $Panel/MarginContainer/Content/TabContentContainer/TabViewport/UpgradesScroll
 @onready var abilities_scroll: ScrollContainer = $Panel/MarginContainer/Content/TabContentContainer/TabViewport/AbilitiesScroll
 @onready var map_scroll: ScrollContainer = $Panel/MarginContainer/Content/TabContentContainer/TabViewport/MapScroll
+@onready var settings_scroll: ScrollContainer = $Panel/MarginContainer/Content/TabContentContainer/TabViewport/SettingsScroll
 
 @onready var upgrades_tab_root: Control = upgrades_scroll.get_node("UpgradesTab")
 @onready var abilities_tab_root: Control = abilities_scroll.get_node("AbilitiesTab")
+@onready var map_tab_root: Control = map_scroll.get_node("MapTab")
+@onready var settings_tab_root: Control = settings_scroll.get_node("SettingsTab")
 
 @onready var upgrades_tab_button: Button = $Panel/MarginContainer/Content/TabBar/UpgradesTabButton
 @onready var abilities_tab_button: Button = $Panel/MarginContainer/Content/TabBar/AbilitiesTabButton
 @onready var map_tab_button: Button = $Panel/MarginContainer/Content/TabBar/MapTabButton
+@onready var settings_tab_button: Button = $Panel/MarginContainer/Content/TabBar/SettingsTabButton
 @onready var popup_overlay_root: ColorRect = $PopupOverlay
 
 var damage_btn: Button
@@ -170,19 +176,28 @@ var ability_popup_meta_label: Label
 var ability_popup_status_label: Label
 var ability_popup_close_button: Button
 var ability_popup_action_button: Button
+var map_chapter_label: Label
+var map_current_state_label: Label
+var map_cleared_chapters_label: Label
+var map_auto_summary_label: Label
+var map_wave_buttons: Array[Button] = []
+var map_boss_button: Button
+var map_start_selected_button: Button
+var settings_auto_next_wave_toggle: CheckButton
+var settings_auto_start_boss_toggle: CheckButton
 
 var upgrade_system: Node
 var save_manager: Node
 var ability_system: Node
 var hero: Node2D
 var wave_manager: Node
-var monster_container: Node
 var active_tab: String = TAB_UPGRADES
 var selected_ability_id: String = ""
 var selected_ability_source_role: String = "library"
 var selected_ability_slot_index: int = -1
 
 var _scroll_handler := ScrollableButtonHandlerRef.new()
+var _campaign_ui := CampaignUiPresenterRef.new()
 var _refresh_requested := true
 var _refresh_timer := 0.0
 
@@ -194,18 +209,21 @@ func _ready() -> void:
 
 	_cache_upgrade_controls()
 	_cache_ability_controls()
+	_cache_map_controls()
+	_cache_settings_controls()
 	_bind_upgrade_buttons()
 	_bind_ability_buttons()
+	_bind_map_buttons()
+	_bind_settings_buttons()
 	_bind_tab_buttons()
 	_connect_state_signals()
-	bind_runtime(_resolve_hero(), _resolve_wave_manager(), _resolve_monster_container())
+	bind_runtime(_resolve_hero(), _resolve_wave_manager(), null)
 	set_active_tab(TAB_UPGRADES)
 	_update_ui()
 
-func bind_runtime(next_hero: Node2D, next_wave_manager: Node, next_monster_container: Node) -> void:
+func bind_runtime(next_hero: Node2D, next_wave_manager: Node, _next_monster_container: Node) -> void:
 	hero = next_hero
 	wave_manager = next_wave_manager
-	monster_container = next_monster_container
 	_connect_runtime_signals()
 	_request_refresh()
 
@@ -248,6 +266,22 @@ func _cache_ability_controls() -> void:
 	ability_popup_close_button = popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/PopupButtons/PopupCloseButton")
 	ability_popup_action_button = popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/PopupButtons/PopupActionButton")
 
+func _cache_map_controls() -> void:
+	map_chapter_label = map_tab_root.get_node("ChapterLabel")
+	map_current_state_label = map_tab_root.get_node("CurrentStateLabel")
+	map_cleared_chapters_label = map_tab_root.get_node("ClearedChaptersLabel")
+	map_auto_summary_label = map_tab_root.get_node("AutoSummaryLabel")
+	var wave_grid = map_tab_root.get_node("WaveGrid")
+	map_wave_buttons.clear()
+	for index in range(1, 11):
+		map_wave_buttons.append(wave_grid.get_node("Wave%dButton" % index) as Button)
+	map_boss_button = map_tab_root.get_node("BossButton")
+	map_start_selected_button = map_tab_root.get_node("StartSelectedButton")
+
+func _cache_settings_controls() -> void:
+	settings_auto_next_wave_toggle = settings_tab_root.get_node("AutoNextWaveToggle")
+	settings_auto_start_boss_toggle = settings_tab_root.get_node("AutoStartBossToggle")
+
 func _bind_upgrade_buttons() -> void:
 	for config in UPGRADE_BUTTON_CONFIGS:
 		var upgrade_id = String(config.get("upgrade_id", ""))
@@ -283,6 +317,23 @@ func _bind_ability_buttons() -> void:
 	for index in range(ability_slot_buttons.size()):
 		ability_slot_buttons[index].configure("", "slot", index)
 
+func _bind_map_buttons() -> void:
+	for index in range(map_wave_buttons.size()):
+		var wave_index = index + 1
+		_register_scrollable_button(map_wave_buttons[index], func() -> void:
+			_on_map_wave_pressed(wave_index)
+		)
+	_register_scrollable_button(map_boss_button, _on_map_boss_pressed)
+	_register_scrollable_button(map_start_selected_button, _on_map_start_selected_pressed)
+
+func _bind_settings_buttons() -> void:
+	_register_scrollable_button(settings_auto_next_wave_toggle, func() -> void:
+		_apply_auto_next_wave_toggle(not _get_auto_next_wave_setting())
+	)
+	_register_scrollable_button(settings_auto_start_boss_toggle, func() -> void:
+		_apply_auto_start_boss_toggle(not _get_auto_start_boss_setting())
+	)
+
 func _bind_tab_buttons() -> void:
 	upgrades_tab_button.pressed.connect(func() -> void:
 		set_active_tab(TAB_UPGRADES)
@@ -293,6 +344,9 @@ func _bind_tab_buttons() -> void:
 	map_tab_button.pressed.connect(func() -> void:
 		set_active_tab(TAB_MAP)
 	)
+	settings_tab_button.pressed.connect(func() -> void:
+		set_active_tab(TAB_SETTINGS)
+	)
 
 func _connect_state_signals() -> void:
 	_connect_signal_once(save_manager, "save_data_changed", Callable(self, "_on_external_state_changed"))
@@ -302,6 +356,9 @@ func _connect_state_signals() -> void:
 func _connect_runtime_signals() -> void:
 	_connect_signal_once(wave_manager, "wave_started", Callable(self, "_on_external_state_changed"))
 	_connect_signal_once(wave_manager, "wave_completed", Callable(self, "_on_external_state_changed"))
+	_connect_signal_once(wave_manager, "boss_started", Callable(self, "_on_external_state_changed"))
+	_connect_signal_once(wave_manager, "chapter_completed", Callable(self, "_on_external_state_changed"))
+	_connect_signal_once(wave_manager, "campaign_state_changed", Callable(self, "_on_external_state_changed"))
 
 func _connect_signal_once(emitter: Object, signal_name: String, callable: Callable) -> void:
 	if emitter == null or not emitter.has_signal(signal_name):
@@ -311,9 +368,6 @@ func _connect_signal_once(emitter: Object, signal_name: String, callable: Callab
 
 func _register_scrollable_button(button: Button, tap_action: Callable) -> void:
 	_scroll_handler.register_button(button, tap_action)
-
-func _clear_button_touch_state(button: Button) -> void:
-	_scroll_handler.clear_state(button)
 
 func _is_quick_tap(duration_ms: int, drag_distance: float) -> bool:
 	return _scroll_handler.is_quick_tap(duration_ms, drag_distance)
@@ -326,9 +380,11 @@ func set_active_tab(tab_name: String) -> void:
 	upgrades_scroll.visible = tab_name == TAB_UPGRADES
 	abilities_scroll.visible = tab_name == TAB_ABILITIES
 	map_scroll.visible = tab_name == TAB_MAP
+	settings_scroll.visible = tab_name == TAB_SETTINGS
 	upgrades_tab_button.button_pressed = tab_name == TAB_UPGRADES
 	abilities_tab_button.button_pressed = tab_name == TAB_ABILITIES
 	map_tab_button.button_pressed = tab_name == TAB_MAP
+	settings_tab_button.button_pressed = tab_name == TAB_SETTINGS
 	_request_refresh()
 
 func on_ability_tile_pressed(tile: Button) -> void:
@@ -383,12 +439,10 @@ func _update_ui() -> void:
 	if save_manager == null or upgrade_system == null or ability_system == null:
 		return
 
+	var campaign_state = _refresh_campaign_state()
 	if gold_label:
 		gold_label.text = "Gold: %d" % int(save_manager.save_data.get("gold", 0))
-	if top_wave_label:
-		top_wave_label.text = "Wave %d" % int(save_manager.save_data.get("wave", 1))
-	if wave_label:
-		wave_label.text = "Monsters: %d/10" % int(save_manager.save_data.get("monsters_killed", 0))
+	_campaign_ui.update_summary_labels(top_wave_label, wave_label, campaign_status_label, campaign_state)
 
 	var upgrades = upgrade_system.get_all_upgrades()
 	for config in UPGRADE_BUTTON_CONFIGS:
@@ -407,6 +461,21 @@ func _update_ui() -> void:
 		)
 
 	_update_abilities_ui()
+	_campaign_ui.update_map_ui(
+		map_chapter_label,
+		map_current_state_label,
+		map_cleared_chapters_label,
+		map_auto_summary_label,
+		map_wave_buttons,
+		map_boss_button,
+		map_start_selected_button,
+		campaign_state
+	)
+	_campaign_ui.update_settings_ui(
+		settings_auto_next_wave_toggle,
+		settings_auto_start_boss_toggle,
+		campaign_state
+	)
 	_update_hero_stats_label()
 
 func _update_hero_stats_label() -> void:
@@ -514,27 +583,6 @@ func _update_upgrade_multiplier_buttons(upgrade_name: String, x10_btn: Button, x
 	x10_btn.disabled = not _can_purchase_upgrade_times(upgrade_name, 10)
 	x100_btn.disabled = not _can_purchase_upgrade_times(upgrade_name, 100)
 
-func _on_damage_clicked() -> void:
-	_purchase_upgrade("damage")
-
-func _on_speed_clicked() -> void:
-	_purchase_upgrade("attack_speed")
-
-func _on_hp_clicked() -> void:
-	_purchase_upgrade("max_hp")
-
-func _on_armor_clicked() -> void:
-	_purchase_upgrade("armor")
-
-func _on_regen_clicked() -> void:
-	_purchase_upgrade("health_regen")
-
-func _on_crit_chance_clicked() -> void:
-	_purchase_upgrade("crit_chance")
-
-func _on_crit_dmg_clicked() -> void:
-	_purchase_upgrade("crit_damage")
-
 func _on_debug_gold_clicked() -> void:
 	_add_debug_gold(1)
 
@@ -561,7 +609,7 @@ func _purchase_upgrade_multiple(upgrade_name: String, times: int) -> void:
 	_update_ui()
 
 func _add_debug_gold(times: int) -> void:
-	save_manager.add_gold(100 * times, true)
+	save_manager.add_gold(DEBUG_GOLD_GRANT * times, true)
 	_request_refresh()
 	_update_ui()
 
@@ -570,6 +618,8 @@ func _reset_progress_multiple(times: int) -> void:
 		save_manager.reset()
 	upgrade_system.load_from_save()
 	ability_system.load_from_save()
+	if wave_manager and is_instance_valid(wave_manager) and wave_manager.has_method("restart_from_save"):
+		wave_manager.restart_from_save()
 	_refresh_hero_stats(true)
 	_close_ability_popup()
 	_request_refresh()
@@ -593,6 +643,69 @@ func _can_purchase_upgrade_times(upgrade_name: String, times: int) -> bool:
 		simulated_level += 1
 	return true
 
+func _refresh_campaign_state() -> Dictionary:
+	if wave_manager and is_instance_valid(wave_manager) and wave_manager.has_method("get_campaign_snapshot"):
+		return wave_manager.get_campaign_snapshot()
+	return _campaign_ui.build_fallback_campaign_state(save_manager.save_data)
+
+func _on_map_wave_pressed(wave_number: int) -> void:
+	if wave_manager and is_instance_valid(wave_manager) and wave_manager.has_method("select_wave"):
+		wave_manager.select_wave(wave_number)
+	_request_refresh()
+	_update_ui()
+
+func _on_map_boss_pressed() -> void:
+	if wave_manager and is_instance_valid(wave_manager) and wave_manager.has_method("select_boss"):
+		wave_manager.select_boss()
+	_request_refresh()
+	_update_ui()
+
+func _on_map_start_selected_pressed() -> void:
+	if wave_manager and is_instance_valid(wave_manager) and wave_manager.has_method("start_selected_target"):
+		wave_manager.start_selected_target()
+	_request_refresh()
+	_update_ui()
+
+func _on_auto_next_wave_toggled(enabled: bool) -> void:
+	if wave_manager and is_instance_valid(wave_manager) and wave_manager.has_method("set_auto_next_wave"):
+		wave_manager.set_auto_next_wave(enabled)
+	elif save_manager:
+		save_manager.set_save_field("setting_auto_next_wave", enabled, true, "auto_next_wave")
+	_request_refresh()
+	_update_ui()
+
+func _on_auto_start_boss_toggled(enabled: bool) -> void:
+	if wave_manager and is_instance_valid(wave_manager) and wave_manager.has_method("set_auto_start_boss"):
+		wave_manager.set_auto_start_boss(enabled)
+	elif save_manager:
+		save_manager.set_save_field("setting_auto_start_boss", enabled, true, "auto_start_boss")
+	_request_refresh()
+	_update_ui()
+
+func _apply_auto_next_wave_toggle(enabled: bool) -> void:
+	if settings_auto_next_wave_toggle:
+		settings_auto_next_wave_toggle.set_pressed_no_signal(enabled)
+	_on_auto_next_wave_toggled(enabled)
+
+func _apply_auto_start_boss_toggle(enabled: bool) -> void:
+	if settings_auto_start_boss_toggle:
+		settings_auto_start_boss_toggle.set_pressed_no_signal(enabled)
+	_on_auto_start_boss_toggled(enabled)
+
+func _get_auto_next_wave_setting() -> bool:
+	if wave_manager and is_instance_valid(wave_manager) and wave_manager.has_method("get_auto_next_wave"):
+		return wave_manager.get_auto_next_wave()
+	if save_manager:
+		return bool(save_manager.save_data.get("setting_auto_next_wave", true))
+	return true
+
+func _get_auto_start_boss_setting() -> bool:
+	if wave_manager and is_instance_valid(wave_manager) and wave_manager.has_method("get_auto_start_boss"):
+		return wave_manager.get_auto_start_boss()
+	if save_manager:
+		return bool(save_manager.save_data.get("setting_auto_start_boss", false))
+	return false
+
 func _request_refresh() -> void:
 	_refresh_requested = true
 
@@ -610,9 +723,3 @@ func _resolve_wave_manager() -> Node:
 	if parent_node == null:
 		return null
 	return parent_node.get_node_or_null("WaveManager")
-
-func _resolve_monster_container() -> Node:
-	var parent_node = get_parent()
-	if parent_node == null:
-		return null
-	return parent_node.get_node_or_null("CombatArea/Monsters")

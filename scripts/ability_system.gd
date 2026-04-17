@@ -208,6 +208,13 @@ func get_passive_bonuses() -> Dictionary:
 func get_cooldown_remaining(ability_id: String) -> float:
 	return float(_runtime_cooldowns.get(ability_id, 0.0))
 
+func reset_runtime_cooldowns() -> void:
+	_runtime_cooldowns.clear()
+	for ability_id in get_equipped_ability_ids():
+		var definition = get_definition(ability_id)
+		if definition:
+			_runtime_cooldowns[ability_id] = max(definition.cooldown_seconds, 0.0)
+
 func _persist_loadout() -> void:
 	var save_manager = GameServicesRef.require_save_manager(self)
 	if save_manager == null:

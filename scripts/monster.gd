@@ -13,6 +13,10 @@ const ATTACK_LUNGE_DURATION: float = 0.1
 const ATTACK_RECOVER_DURATION: float = 0.08
 const QUEUE_SPACING: float = 72.0
 const DEFAULT_VISUAL_SIZE := Vector2(50.0, 60.0)
+const BASE_HEALTH_BAR_LEFT := -25.0
+const BASE_HEALTH_BAR_TOP := -50.0
+const BASE_HEALTH_BAR_RIGHT := 25.0
+const BASE_HEALTH_BAR_BOTTOM := -35.0
 
 @onready var health_bar: ProgressBar = $HealthBar
 @onready var body: Node2D = $Body
@@ -39,12 +43,24 @@ var is_attacking: bool = false
 var body_base_position: Vector2 = Vector2.ZERO
 var attack_tween: Tween
 var hero: Node2D
+var current_visual_scale: float = 1.0
 
 const MONSTER_STATS := {
 	"slime": {"hp": 50.0, "atk": 5.0, "gold": 5.0, "speed": 30.0, "attack_speed": 0.7, "armor": 0.0, "health_regen": 0.0, "color": Color.GREEN},
 	"goblin": {"hp": 100.0, "atk": 10.0, "gold": 10.0, "speed": 40.0, "attack_speed": 0.75, "armor": 5.0, "health_regen": 0.5, "color": Color.BROWN},
 	"orc": {"hp": 200.0, "atk": 20.0, "gold": 20.0, "speed": 35.0, "attack_speed": 0.8, "armor": 10.0, "health_regen": 1.0, "color": Color.RED},
-	"demon": {"hp": 500.0, "atk": 50.0, "gold": 50.0, "speed": 45.0, "attack_speed": 0.9, "armor": 18.0, "health_regen": 2.0, "color": Color.PURPLE}
+	"demon": {"hp": 500.0, "atk": 50.0, "gold": 50.0, "speed": 45.0, "attack_speed": 0.9, "armor": 18.0, "health_regen": 2.0, "color": Color.PURPLE},
+	"boss": {
+		"hp": 650.0,
+		"atk": 60.0,
+		"gold": 100.0,
+		"speed": 36.0,
+		"attack_speed": 0.85,
+		"armor": 22.0,
+		"health_regen": 3.0,
+		"color": Color(0.82, 0.18, 0.18, 1.0),
+		"visual_scale": 1.8
+	}
 }
 
 func _ready() -> void:
@@ -54,21 +70,27 @@ func _ready() -> void:
 func assign_hero(next_hero: Node2D) -> void:
 	hero = next_hero
 
-func setup(type: String, wave_bonus: float = 1.0) -> void:
+func setup(
+	type: String,
+	wave_bonus: float = 1.0,
+	stat_multipliers: Dictionary = {},
+	gold_multiplier: float = 1.0
+) -> void:
 	monster_type = type
 	var stats = MONSTER_STATS.get(type, MONSTER_STATS.slime)
-	var combat_stats = CombatMathRef.build_monster_stats(stats, wave_bonus)
+	var combat_stats = CombatMathRef.build_monster_stats(stats, wave_bonus, stat_multipliers)
 	max_hp = combat_stats.max_hp
 	current_hp = max_hp
 	attack_power = combat_stats.attack_damage
 	attack_speed = combat_stats.attack_speed
 	armor = combat_stats.armor
 	health_regen = combat_stats.health_regen
-	gold_reward = int(stats.gold * wave_bonus)
+	gold_reward = int(round(float(stats.gold) * wave_bonus * gold_multiplier))
 	base_move_speed = stats.speed
 	move_speed = base_move_speed
 	attack_interval = CombatMathRef.get_attack_interval(combat_stats)
-	body.modulate = stats.color
+	current_visual_scale = maxf(float(stats.get("visual_scale", 1.0)), 1.0)
+	_apply_visual_profile(stats)
 	is_dead = false
 	death_timer = 0.0
 	is_attacking = false
@@ -77,6 +99,20 @@ func setup(type: String, wave_bonus: float = 1.0) -> void:
 	modulate.a = 1.0
 	_reset_attack_pose()
 	_update_health_bar()
+
+func _apply_visual_profile(stats: Dictionary) -> void:
+	if body:
+		body.modulate = stats.color
+		body.scale = Vector2.ONE * current_visual_scale
+	if collision_shape:
+		collision_shape.scale = Vector2.ONE * current_visual_scale
+	if health_bar:
+		var half_width = 25.0 * current_visual_scale
+		var vertical_shift = 18.0 * (current_visual_scale - 1.0)
+		health_bar.offset_left = -half_width
+		health_bar.offset_right = half_width
+		health_bar.offset_top = BASE_HEALTH_BAR_TOP - vertical_shift
+		health_bar.offset_bottom = BASE_HEALTH_BAR_BOTTOM - vertical_shift
 
 func configure_approach(hero_x: float, duration: float = TARGET_REACH_DURATION) -> void:
 	var desired_duration = max(duration, 0.01)
