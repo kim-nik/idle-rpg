@@ -19,16 +19,18 @@ func run(environment) -> Array[String]:
 	var save_manager = environment.save_manager
 	var upgrade_system = environment.upgrade_system
 	var ability_system = environment.ability_system
+	var wave_manager = environment.get_wave_manager()
 
 	_expect(ui != null, "UI controller is unavailable", failures)
 	_expect(hero != null, "Hero instance is unavailable for UI assertions", failures)
-	if ui == null or hero == null:
+	_expect(wave_manager != null, "WaveManager is unavailable for UI assertions", failures)
+	if ui == null or hero == null or wave_manager == null:
 		return failures
 
 	ui._update_ui()
 	_expect(ui.gold_label.text == "Gold: 0", "Gold label did not show the baseline state", failures)
-	_expect(ui.top_wave_label.text == "Wave 1", "Top wave label did not show the baseline wave", failures)
-	_expect(ui.wave_label.text == "Monsters: 0/10", "Monster progress label did not show baseline progress", failures)
+	_expect(ui.top_wave_label.text == "Chapter 1 - Wave 1/10", "Top wave label did not show the baseline wave", failures)
+	_expect(ui.wave_label.text == "Defeated 0/20", "Monster progress label did not show baseline progress", failures)
 	_expect(ui.active_tab == ui.TAB_UPGRADES, "Upgrades tab should be active by default", failures)
 	_expect(ui.damage_btn.disabled, "Damage button should be disabled without gold", failures)
 	_expect(ui.armor_btn.disabled, "Armor button should be disabled without gold", failures)
@@ -36,6 +38,7 @@ func run(environment) -> Array[String]:
 	_expect(ui.upgrades_scroll.visible, "Upgrades scroll should be visible by default", failures)
 	_expect(not ui.abilities_scroll.visible, "Abilities scroll should be hidden by default", failures)
 	_expect(not ui.map_scroll.visible, "Map scroll should be hidden by default", failures)
+	_expect(not ui.settings_scroll.visible, "Settings scroll should be hidden by default", failures)
 	_expect(ui._is_quick_tap(120, 8.0), "Quick tap heuristic should accept a short tap", failures)
 	_expect(not ui._is_quick_tap(250, 8.0), "Quick tap heuristic should reject long holds", failures)
 	_expect(not ui._is_quick_tap(120, 30.0), "Quick tap heuristic should reject drags", failures)
@@ -76,6 +79,49 @@ func run(environment) -> Array[String]:
 	ui.set_active_tab(ui.TAB_MAP)
 	_expect(ui.active_tab == ui.TAB_MAP, "Map tab did not become active", failures)
 	_expect(ui.map_scroll.visible, "Map scroll should be visible on map tab", failures)
+	_expect(ui.map_wave_buttons.size() == 10, "Map tab should expose 10 wave buttons", failures)
+	_expect(not ui.map_wave_buttons[0].disabled, "Wave 1 should be unlocked by default", failures)
+	_expect(ui.map_wave_buttons[1].disabled, "Wave 2 should stay locked by default", failures)
+	_expect(ui.map_start_selected_button != null and not ui.map_start_selected_button.disabled, "Start button should be ready for Wave 1", failures)
+	_expect(ui.map_boss_button.disabled, "Boss button should be locked at the start", failures)
+
+	wave_manager.highest_unlocked_wave = 3
+	wave_manager.current_wave = 2
+	wave_manager.selected_wave = 2
+	wave_manager._persist_campaign_state("ui_unlock")
+	ui._update_ui()
+	ui._on_map_wave_pressed(3)
+	_expect(wave_manager.selected_wave == 3, "Map wave selection did not update WaveManager", failures)
+	_expect(ui.map_wave_buttons[2].button_pressed, "Wave 3 button did not become selected", failures)
+
+	wave_manager.is_boss_unlocked = true
+	wave_manager.select_boss()
+	ui._update_ui()
+	_expect(not ui.map_boss_button.disabled, "Boss button should unlock after boss access is granted", failures)
+	_expect(ui.map_boss_button.button_pressed, "Boss button should become selected", failures)
+	ui._on_map_start_selected_pressed()
+	_expect(wave_manager.is_in_boss_fight, "Starting the selected boss did not enter boss fight state", failures)
+	ui._update_ui()
+	_expect(ui.top_wave_label.text == "Chapter 1 - Boss", "Top wave label did not switch to boss state", failures)
+	_expect(ui.wave_label.text == "Boss Fight", "Boss fight should replace the kill counter with a boss indicator", failures)
+	_expect(
+		ui.campaign_status_label.text.begins_with("Boss timer: 30.0s"),
+		"Boss fight should expose the 30 second timer in the UI",
+		failures
+	)
+	var boss_container = environment.get_monster_container()
+	_expect(boss_container.get_child_count() == 1, "Boss fight should spawn the boss immediately", failures)
+	if boss_container.get_child_count() == 1:
+		var boss = boss_container.get_child(0)
+		_expect(boss.monster_type == "boss", "Boss fight did not spawn the dedicated boss monster", failures)
+
+	ui.set_active_tab(ui.TAB_SETTINGS)
+	_expect(ui.active_tab == ui.TAB_SETTINGS, "Settings tab did not become active", failures)
+	_expect(ui.settings_scroll.visible, "Settings scroll should be visible on settings tab", failures)
+	ui._on_auto_next_wave_toggled(false)
+	ui._on_auto_start_boss_toggled(true)
+	_expect(not save_manager.save_data.setting_auto_next_wave, "Auto Next Wave setting did not persist from UI", failures)
+	_expect(save_manager.save_data.setting_auto_start_boss, "Auto Start Boss setting did not persist from UI", failures)
 
 	ui.set_active_tab(ui.TAB_UPGRADES)
 
@@ -89,15 +135,15 @@ func run(environment) -> Array[String]:
 
 	ui._on_debug_gold_clicked()
 	ui._update_ui()
-	_expect(save_manager.save_data.gold == 100, "Debug gold button did not add 100 gold", failures)
-	_expect(ui.gold_label.text == "Gold: 100", "Gold label did not refresh after debug gold", failures)
+	_expect(save_manager.save_data.gold == 100000, "Debug gold button did not add 100000 gold", failures)
+	_expect(ui.gold_label.text == "Gold: 100000", "Gold label did not refresh after debug gold", failures)
 	_expect(not ui.damage_btn.disabled, "Damage button stayed disabled after debug gold", failures)
 	ui._add_debug_gold(10)
 	ui._update_ui()
-	_expect(save_manager.save_data.gold == 1100, "Debug x10 did not add 1000 gold", failures)
+	_expect(save_manager.save_data.gold == 1100000, "Debug x10 did not add 1000000 gold", failures)
 	ui._add_debug_gold(100)
 	ui._update_ui()
-	_expect(save_manager.save_data.gold == 11100, "Debug x100 did not add 10000 gold", failures)
+	_expect(save_manager.save_data.gold == 11100000, "Debug x100 did not add 10000000 gold", failures)
 
 	save_manager.save_data.gold = 1000
 	upgrade_system.load_from_save()
@@ -122,10 +168,20 @@ func run(environment) -> Array[String]:
 	save_manager.save_data.crit_damage_level = 6
 	save_manager.save_data.wave = 8
 	save_manager.save_data.monsters_killed = 7
+	save_manager.save_data.campaign_chapter = 3
+	save_manager.save_data.campaign_wave = 8
+	save_manager.save_data.campaign_highest_unlocked_wave = 8
+	save_manager.save_data.campaign_highest_cleared_chapter = 2
+	save_manager.save_data.campaign_boss_unlocked = true
+	save_manager.save_data.campaign_selected_wave = 8
+	save_manager.save_data.campaign_selected_boss = false
+	save_manager.save_data.setting_auto_next_wave = false
+	save_manager.save_data.setting_auto_start_boss = true
 	save_manager.save_data.unlocked_ability_ids = ["evil_eye", "leg_sweep", "punch"]
 	save_manager.save_data.equipped_ability_slots = ["punch", "leg_sweep", "evil_eye", "", "", "", "", ""]
 	upgrade_system.load_from_save()
 	ability_system.load_from_save()
+	wave_manager.restart_from_save()
 	hero.current_hp = 1
 
 	ui._on_reset_progress_clicked()
@@ -139,8 +195,25 @@ func run(environment) -> Array[String]:
 	_expect(save_manager.save_data.health_regen_level == 1, "Reset did not restore regen level", failures)
 	_expect(save_manager.save_data.crit_chance_level == 1, "Reset did not restore crit chance level", failures)
 	_expect(save_manager.save_data.crit_damage_level == 1, "Reset did not restore crit damage level", failures)
-	_expect(save_manager.save_data.wave == 1, "Reset did not restore wave progress", failures)
+	_expect(save_manager.save_data.wave == 1, "Reset did not restore wave alias", failures)
 	_expect(save_manager.save_data.monsters_killed == 0, "Reset did not clear monster kills", failures)
+	_expect(save_manager.save_data.campaign_chapter == 1, "Reset did not restore campaign chapter", failures)
+	_expect(save_manager.save_data.campaign_wave == 1, "Reset did not restore campaign wave", failures)
+	_expect(
+		save_manager.save_data.campaign_highest_unlocked_wave == 1,
+		"Reset did not restore highest unlocked wave",
+		failures
+	)
+	_expect(
+		save_manager.save_data.campaign_highest_cleared_chapter == 0,
+		"Reset did not restore cleared chapter marker",
+		failures
+	)
+	_expect(not save_manager.save_data.campaign_boss_unlocked, "Reset did not clear boss unlock state", failures)
+	_expect(save_manager.save_data.campaign_selected_wave == 1, "Reset did not restore selected wave", failures)
+	_expect(not save_manager.save_data.campaign_selected_boss, "Reset did not clear selected boss state", failures)
+	_expect(save_manager.save_data.setting_auto_next_wave, "Reset did not restore Auto Next Wave default", failures)
+	_expect(not save_manager.save_data.setting_auto_start_boss, "Reset did not restore Auto Start Boss default", failures)
 	_expect(
 		save_manager.save_data.unlocked_ability_ids == ["evil_eye", "leg_sweep", "punch"],
 		"Reset did not restore starter abilities",
@@ -153,9 +226,11 @@ func run(environment) -> Array[String]:
 	)
 	_expect(hero.current_hp == hero.max_hp, "Hero health was not restored after reset", failures)
 	_expect(ui.gold_label.text == "Gold: 0", "Gold label did not refresh after reset", failures)
-	_expect(ui.top_wave_label.text == "Wave 1", "Top wave label did not refresh after reset", failures)
-	_expect(ui.wave_label.text == "Monsters: 0/10", "Monster progress label did not refresh after reset", failures)
+	_expect(ui.top_wave_label.text == "Chapter 1 - Wave 1/10", "Top wave label did not refresh after reset", failures)
+	_expect(ui.wave_label.text == "Defeated 0/20", "Monster progress label did not refresh after reset", failures)
 	_expect(ui.damage_btn.disabled, "Damage button should be disabled again after reset", failures)
+	_expect(wave_manager.current_chapter == 1, "WaveManager chapter did not reset", failures)
+	_expect(wave_manager.current_wave == 1, "WaveManager wave did not reset", failures)
 
 	save_manager.save_data.gold = 999
 	ui._reset_progress_multiple(10)

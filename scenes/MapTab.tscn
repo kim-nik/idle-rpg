@@ -7,18 +7,122 @@ theme_override_constants/separation = 16
 
 [node name="TitleLabel" type="Label" parent="."]
 layout_mode = 2
+theme_override_font_sizes/font_size = 26
 text = "Map"
 
-[node name="DescriptionLabel" type="Label" parent="."]
+[node name="ChapterLabel" type="Label" parent="."]
 layout_mode = 2
-autowrap_mode = 3
-text = "This tab will show level progression, boss milestones, and regional unlocks. It is a placeholder shell for the upcoming map system."
+theme_override_font_sizes/font_size = 24
+text = "Chapter 1"
 
-[node name="MilestoneLabel" type="Label" parent="."]
+[node name="CurrentStateLabel" type="Label" parent="."]
 layout_mode = 2
 autowrap_mode = 3
-text = "Planned: current level, cleared nodes, boss status, unlock rewards, and transitions into future regions."
+theme_override_font_sizes/font_size = 20
+text = "Current: Wave 1"
+
+[node name="ClearedChaptersLabel" type="Label" parent="."]
+layout_mode = 2
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 20
+text = "Cleared Chapters: 0"
+
+[node name="AutoSummaryLabel" type="Label" parent="."]
+layout_mode = 2
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 18
+text = "Auto Next Wave: ON | Auto Start Boss: OFF"
+
+[node name="WaveGrid" type="GridContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+columns = 5
+
+[node name="Wave1Button" type="Button" parent="WaveGrid"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Wave 1"
+toggle_mode = true
+
+[node name="Wave2Button" type="Button" parent="WaveGrid"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Wave 2"
+toggle_mode = true
+
+[node name="Wave3Button" type="Button" parent="WaveGrid"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Wave 3"
+toggle_mode = true
+
+[node name="Wave4Button" type="Button" parent="WaveGrid"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Wave 4"
+toggle_mode = true
+
+[node name="Wave5Button" type="Button" parent="WaveGrid"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Wave 5"
+toggle_mode = true
+
+[node name="Wave6Button" type="Button" parent="WaveGrid"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Wave 6"
+toggle_mode = true
+
+[node name="Wave7Button" type="Button" parent="WaveGrid"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Wave 7"
+toggle_mode = true
+
+[node name="Wave8Button" type="Button" parent="WaveGrid"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Wave 8"
+toggle_mode = true
+
+[node name="Wave9Button" type="Button" parent="WaveGrid"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Wave 9"
+toggle_mode = true
+
+[node name="Wave10Button" type="Button" parent="WaveGrid"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Wave 10"
+toggle_mode = true
+
+[node name="BossButton" type="Button" parent="."]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Boss"
+toggle_mode = true
+
+[node name="StartSelectedButton" type="Button" parent="."]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Start Selected"
 
 [node name="BottomSpacer" type="Control" parent="."]
-custom_minimum_size = Vector2(0, 320)
+custom_minimum_size = Vector2(0, 160)
 layout_mode = 2

@@ -31,6 +31,9 @@ func run(environment) -> Array[String]:
 	var panel = environment.main_scene.get_node_or_null("UIArea/Panel") as Panel
 	var top_wave_banner = environment.main_scene.get_node_or_null("UIArea/TopWaveBanner") as Panel
 	var top_wave_label = environment.main_scene.get_node_or_null("UIArea/TopWaveBanner/TopWaveLabel") as Label
+	var campaign_status_label = environment.main_scene.get_node_or_null(
+		"UIArea/Panel/MarginContainer/Content/StatsContainer/CampaignStatusLabel"
+	) as Label
 	var tab_bar = environment.main_scene.get_node_or_null("UIArea/Panel/MarginContainer/Content/TabBar") as HBoxContainer
 	var upgrades_scroll = environment.main_scene.get_node_or_null(
 		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/UpgradesScroll"
@@ -40,6 +43,9 @@ func run(environment) -> Array[String]:
 	) as ScrollContainer
 	var map_scroll = environment.main_scene.get_node_or_null(
 		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/MapScroll"
+	) as ScrollContainer
+	var settings_scroll = environment.main_scene.get_node_or_null(
+		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/SettingsScroll"
 	) as ScrollContainer
 	var viewport_width = int(ProjectSettings.get_setting("display/window/size/viewport_width", 0))
 	var viewport_height = int(ProjectSettings.get_setting("display/window/size/viewport_height", 0))
@@ -53,10 +59,12 @@ func run(environment) -> Array[String]:
 	_expect(panel != null, "UI panel node is missing", failures)
 	_expect(top_wave_banner != null, "Top wave banner is missing", failures)
 	_expect(top_wave_label != null, "Top wave label is missing", failures)
+	_expect(campaign_status_label != null, "Campaign status label is missing", failures)
 	_expect(tab_bar != null, "Tab bar is missing", failures)
 	_expect(upgrades_scroll != null, "Upgrades scroll container is missing", failures)
 	_expect(abilities_scroll != null, "Abilities scroll container is missing", failures)
 	_expect(map_scroll != null, "Map scroll container is missing", failures)
+	_expect(settings_scroll != null, "Settings scroll container is missing", failures)
 
 	if combat_background:
 		_expect(is_equal_approx(combat_background.size.y, 960.0), "Combat area is not half-screen height", failures)
@@ -92,7 +100,9 @@ func run(environment) -> Array[String]:
 	if upgrades_scroll:
 		_expect(not upgrades_scroll.horizontal_scroll_mode, "Upgrades tab should not scroll horizontally", failures)
 	if tab_bar:
-		_expect(tab_bar.get_child_count() == 3, "Tab bar should contain three buttons", failures)
+		_expect(tab_bar.get_child_count() == 4, "Tab bar should contain four buttons", failures)
+	if settings_scroll:
+		_expect(not settings_scroll.visible, "Settings tab should be hidden by default", failures)
 
 	if upgrade_container and debug_row:
 		_expect(debug_row.get_parent() == upgrade_container, "Debug row is outside the upgrade stack", failures)
@@ -117,5 +127,12 @@ func run(environment) -> Array[String]:
 						failures
 					)
 					_expect(button.custom_minimum_size.y >= 88.0, "%s should use taller upgrade cards" % button.name, failures)
+
+	if ui:
+		_expect(ui.map_wave_buttons.size() == 10, "Map tab should expose 10 wave buttons", failures)
+		_expect(ui.map_boss_button != null, "Map tab is missing the boss button", failures)
+		_expect(ui.map_start_selected_button != null, "Map tab is missing the start button", failures)
+		_expect(ui.settings_auto_next_wave_toggle != null, "Settings tab is missing Auto Next Wave toggle", failures)
+		_expect(ui.settings_auto_start_boss_toggle != null, "Settings tab is missing Auto Start Boss toggle", failures)
 
 	return failures

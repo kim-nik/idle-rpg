@@ -25,7 +25,8 @@ func run(environment) -> Array[String]:
 	var tab_sequence = [
 		{"button": ui.upgrades_tab_button, "tab": ui.TAB_UPGRADES, "scroll": ui.upgrades_scroll},
 		{"button": ui.abilities_tab_button, "tab": ui.TAB_ABILITIES, "scroll": ui.abilities_scroll},
-		{"button": ui.map_tab_button, "tab": ui.TAB_MAP, "scroll": ui.map_scroll}
+		{"button": ui.map_tab_button, "tab": ui.TAB_MAP, "scroll": ui.map_scroll},
+		{"button": ui.settings_tab_button, "tab": ui.TAB_SETTINGS, "scroll": ui.settings_scroll}
 	]
 
 	for item in tab_sequence:
@@ -46,6 +47,57 @@ func run(environment) -> Array[String]:
 	await environment.runner.get_tree().process_frame
 	_expect(ui.active_tab == ui.TAB_UPGRADES, "Failed to return to upgrades tab", failures)
 
+	var wave_manager = environment.get_wave_manager()
+	if wave_manager:
+		wave_manager.highest_unlocked_wave = 2
+		wave_manager.current_wave = 1
+		wave_manager.selected_wave = 1
+		wave_manager._persist_campaign_state("nav_test")
+
+	ui.map_tab_button.emit_signal("pressed")
+	await environment.runner.get_tree().process_frame
+	await _tap_button(environment, ui.map_wave_buttons[1], 0, Vector2(40, 40))
+	_expect(ui.active_tab == ui.TAB_MAP, "Map tab should stay active after selecting a wave", failures)
+	_expect(environment.save_manager.save_data.campaign_selected_wave == 2, "Wave 2 selection was not persisted", failures)
+	_expect(wave_manager.selected_wave == 2, "Wave 2 tap did not update WaveManager selection", failures)
+
+	if wave_manager:
+		wave_manager.current_chapter = 1
+		wave_manager.current_wave = 10
+		wave_manager.highest_unlocked_wave = 10
+		wave_manager.selected_wave = 10
+		wave_manager.selected_boss = false
+		wave_manager.is_boss_unlocked = true
+		wave_manager.is_in_boss_fight = false
+		wave_manager._persist_campaign_state("nav_boss_touch")
+		ui._update_ui()
+
+	await _tap_button(environment, ui.map_boss_button, 1, Vector2(44, 44))
+	_expect(wave_manager.selected_boss, "Boss button tap did not select the boss encounter", failures)
+	await _tap_button(environment, ui.map_start_selected_button, 2, Vector2(48, 48))
+	await environment.runner.get_tree().process_frame
+	_expect(wave_manager.is_in_boss_fight, "Start Selected tap did not enter boss fight state", failures)
+	var boss_container = environment.get_monster_container()
+	_expect(boss_container.get_child_count() == 1, "Boss start from map tap did not spawn the boss", failures)
+
+	ui.settings_tab_button.emit_signal("pressed")
+	await environment.runner.get_tree().process_frame
+	await _tap_button(environment, ui.settings_auto_next_wave_toggle, 3, Vector2(52, 52))
+	_expect(
+		not environment.save_manager.save_data.setting_auto_next_wave,
+		"Auto Next Wave toggle did not persist the new value",
+		failures
+	)
+	await _tap_button(environment, ui.settings_auto_start_boss_toggle, 4, Vector2(56, 56))
+	_expect(
+		environment.save_manager.save_data.setting_auto_start_boss,
+		"Auto Start Boss toggle did not persist the new value",
+		failures
+	)
+
+	ui.upgrades_tab_button.emit_signal("pressed")
+	await environment.runner.get_tree().process_frame
+
 	var initial_gold = save_manager.save_data.gold
 	var quick_press = InputEventScreenTouch.new()
 	quick_press.index = 0
@@ -58,7 +110,7 @@ func run(environment) -> Array[String]:
 	quick_release.position = Vector2(40, 40)
 	ui.debug_gold_btn.emit_signal("gui_input", quick_release)
 	await environment.runner.get_tree().process_frame
-	_expect(save_manager.save_data.gold == initial_gold + 100, "Debug gold button press did not update gold", failures)
+	_expect(save_manager.save_data.gold == initial_gold + 100000, "Debug gold button press did not update gold", failures)
 
 	var damage_level_before = upgrade_system.damage_level
 	var damage_press = InputEventScreenTouch.new()
@@ -109,3 +161,17 @@ func run(environment) -> Array[String]:
 		_expect(ui.upgrades_scroll.scroll_vertical > 0, "Drag on an upgrade button did not begin scrolling", failures)
 
 	return failures
+
+func _tap_button(environment, button: Button, pointer_index: int, position: Vector2) -> void:
+	var press = InputEventScreenTouch.new()
+	press.index = pointer_index
+	press.pressed = true
+	press.position = position
+	button.emit_signal("gui_input", press)
+
+	var release = InputEventScreenTouch.new()
+	release.index = pointer_index
+	release.pressed = false
+	release.position = position
+	button.emit_signal("gui_input", release)
+	await environment.runner.get_tree().process_frame

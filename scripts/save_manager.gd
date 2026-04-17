@@ -3,7 +3,7 @@ extends Node
 signal save_data_changed(change_reason: String)
 
 const SAVE_FILE := "user://save.dat"
-const SAVE_VERSION := 4
+const SAVE_VERSION := 6
 const DEFAULT_SAVE_DATA := {
 	"version": SAVE_VERSION,
 	"gold": 0,
@@ -16,6 +16,16 @@ const DEFAULT_SAVE_DATA := {
 	"crit_damage_level": 1,
 	"wave": 1,
 	"monsters_killed": 0,
+	"campaign_chapter": 1,
+	"campaign_wave": 1,
+	"campaign_in_boss": false,
+	"campaign_highest_unlocked_wave": 1,
+	"campaign_highest_cleared_chapter": 0,
+	"campaign_boss_unlocked": false,
+	"campaign_selected_wave": 1,
+	"campaign_selected_boss": false,
+	"setting_auto_next_wave": true,
+	"setting_auto_start_boss": false,
 	"unlocked_ability_ids": ["evil_eye", "leg_sweep", "punch"],
 	"equipped_ability_slots": ["", "", "", "", "", "", "", ""]
 }
@@ -85,6 +95,12 @@ func _migrate_save_data(loaded_data: Dictionary) -> Dictionary:
 		source_version = 3
 	if source_version < 4:
 		working_data = _migrate_to_v4(working_data)
+		source_version = 4
+	if source_version < 5:
+		working_data = _migrate_to_v5(working_data)
+		source_version = 5
+	if source_version < 6:
+		working_data = _migrate_to_v6(working_data)
 
 	return _merge_with_defaults(working_data)
 
@@ -117,6 +133,34 @@ func _migrate_to_v4(loaded_data: Dictionary) -> Dictionary:
 	if not migrated_data.has("equipped_ability_slots"):
 		migrated_data.equipped_ability_slots = ["", "", "", "", "", "", "", ""]
 	migrated_data.version = 4
+	return migrated_data
+
+func _migrate_to_v5(loaded_data: Dictionary) -> Dictionary:
+	var migrated_data := loaded_data.duplicate(true)
+	var legacy_wave = maxi(int(migrated_data.get("wave", 1)), 1)
+	var campaign_chapter = int(floor(float(legacy_wave - 1) / 10.0)) + 1
+	var campaign_wave = ((legacy_wave - 1) % 10) + 1
+
+	migrated_data.campaign_chapter = campaign_chapter
+	migrated_data.campaign_wave = campaign_wave
+	migrated_data.campaign_in_boss = false
+	migrated_data.campaign_highest_unlocked_wave = campaign_wave
+	migrated_data.campaign_highest_cleared_chapter = max(campaign_chapter - 1, 0)
+	migrated_data.campaign_boss_unlocked = false
+	migrated_data.campaign_selected_wave = campaign_wave
+	migrated_data.campaign_selected_boss = false
+	migrated_data.setting_auto_next_wave = true
+	migrated_data.setting_auto_start_boss = false
+	migrated_data.wave = campaign_wave
+	migrated_data.monsters_killed = maxi(int(migrated_data.get("monsters_killed", 0)), 0)
+	migrated_data.version = 5
+	return migrated_data
+
+func _migrate_to_v6(loaded_data: Dictionary) -> Dictionary:
+	var migrated_data := loaded_data.duplicate(true)
+	if not migrated_data.has("campaign_highest_cleared_chapter"):
+		migrated_data.campaign_highest_cleared_chapter = max(int(migrated_data.get("campaign_chapter", 1)) - 1, 0)
+	migrated_data.version = 6
 	return migrated_data
 
 func _merge_with_defaults(loaded_data: Dictionary) -> Dictionary:

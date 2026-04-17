@@ -15,6 +15,7 @@ const DAMAGE_TEXT_OFFSET := CombatFeedbackControllerRef.DAMAGE_TEXT_OFFSET
 
 var ability_system: Node
 var combat_feedback := CombatFeedbackControllerRef.new()
+var _defeat_reload_pending := false
 
 func _ready() -> void:
 	ability_system = GameServicesRef.get_ability_system(self)
@@ -28,6 +29,10 @@ func _ready() -> void:
 	hero.hero_died.connect(_on_hero_died)
 	hero.attack_hit.connect(_on_hero_attack_hit)
 	wave_manager.monster_spawned.connect(_on_monster_spawned)
+	if wave_manager.has_signal("boss_started") and not wave_manager.is_connected("boss_started", Callable(self, "_on_boss_started")):
+		wave_manager.boss_started.connect(_on_boss_started)
+	if wave_manager.has_signal("defeat_triggered") and not wave_manager.is_connected("defeat_triggered", Callable(self, "_on_campaign_defeat")):
+		wave_manager.defeat_triggered.connect(_on_campaign_defeat)
 
 	if ability_system:
 		ability_system.load_from_save()
@@ -125,12 +130,18 @@ func _on_monster_spawned(monster: Node2D) -> void:
 func _on_monster_attack_hit(target_position: Vector2, damage: float) -> void:
 	combat_feedback.show_hero_damage(target_position, damage)
 
+func _on_boss_started(_chapter_number: int) -> void:
+	hero.attack_timer = 0.0
+	if ability_system and ability_system.has_method("reset_runtime_cooldowns"):
+		ability_system.reset_runtime_cooldowns()
+
 func _on_hero_died() -> void:
-	var save_manager = GameServicesRef.require_save_manager(self)
-	if save_manager:
-		save_manager.reset()
-	await get_tree().create_timer(2.0).timeout
-	get_tree().reload_current_scene()
+	if wave_manager and wave_manager.has_method("handle_hero_defeat"):
+		wave_manager.handle_hero_defeat("hero_defeat")
+	_schedule_defeat_reload()
+
+func _on_campaign_defeat(_defeat_reason: String) -> void:
+	_schedule_defeat_reload()
 
 func _on_ability_triggered(ability_id: String, target: Node2D, text_value: String, style_name: String) -> void:
 	if target == null or not is_instance_valid(target):
@@ -145,3 +156,15 @@ func _get_world_visual_bounds(target: Node2D) -> Rect2:
 	if target.has_method("get_visual_bounds"):
 		return target.get_visual_bounds()
 	return Rect2(target.global_position - Vector2.ONE * 0.5, Vector2.ONE)
+
+func _schedule_defeat_reload() -> void:
+	if _defeat_reload_pending:
+		return
+	if get_tree().current_scene != self:
+		return
+	_defeat_reload_pending = true
+	var reload_timer = get_tree().create_timer(2.0)
+	reload_timer.timeout.connect(_reload_current_scene, CONNECT_ONE_SHOT)
+
+func _reload_current_scene() -> void:
+	get_tree().reload_current_scene()
