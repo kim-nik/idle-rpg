@@ -31,6 +31,7 @@ func run(environment) -> Array[String]:
 	var panel = environment.main_scene.get_node_or_null("UIArea/Panel") as Panel
 	var top_wave_banner = environment.main_scene.get_node_or_null("UIArea/TopWaveBanner") as Panel
 	var top_wave_label = environment.main_scene.get_node_or_null("UIArea/TopWaveBanner/TopWaveLabel") as Label
+	var gold_label = environment.main_scene.get_node_or_null("UIArea/TopWaveBanner/GoldLabel") as Label
 	var campaign_status_label = environment.main_scene.get_node_or_null(
 		"UIArea/Panel/MarginContainer/Content/StatsContainer/CampaignStatusLabel"
 	) as Label
@@ -59,6 +60,7 @@ func run(environment) -> Array[String]:
 	_expect(panel != null, "UI panel node is missing", failures)
 	_expect(top_wave_banner != null, "Top wave banner is missing", failures)
 	_expect(top_wave_label != null, "Top wave label is missing", failures)
+	_expect(gold_label != null, "Top banner gold label is missing", failures)
 	_expect(campaign_status_label != null, "Campaign status label is missing", failures)
 	_expect(tab_bar != null, "Tab bar is missing", failures)
 	_expect(upgrades_scroll != null, "Upgrades scroll container is missing", failures)
@@ -75,6 +77,12 @@ func run(environment) -> Array[String]:
 		_expect(is_equal_approx(panel.size.y, 960.0), "UI panel does not fill the bottom half", failures)
 	if top_wave_banner:
 		_expect(top_wave_banner.position.y < 120.0, "Top wave banner should remain near the top of the screen", failures)
+	if top_wave_banner and gold_label:
+		_expect(
+			gold_label.get_parent() == top_wave_banner,
+			"Gold label should live inside the top wave banner",
+			failures
+		)
 
 	var upgrade_container = environment.main_scene.get_node_or_null(
 		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/UpgradesScroll/UpgradesTab/UpgradeContainer"

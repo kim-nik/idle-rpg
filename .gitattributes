@@ -22,9 +22,9 @@
 *.mbb binary
 *.mbex binary
 
-# Godot-specific binary files
-*.tscn binary
+# Godot-specific resources
+*.tscn text eol=lf
+*.tres text eol=lf
+*.godot text eol=lf
 *.scn binary
-*.tres binary
 *.res binary
-*.godot binary

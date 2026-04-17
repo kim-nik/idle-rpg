@@ -81,6 +81,7 @@ When generating code, ensure:
 - Keep scene structure predictable and avoid fragile node-path dependencies.
 - Prefer implementing UI, gameplay components, and entity composition in Godot scenes and built-in engine primitives first.
 - Do not build scene structure primarily in code when it can be declared cleanly in `.tscn` scenes.
+- If you create a fully new UI element or screen, give it a finished visual design that follows `docs/UI_STYLE_GUIDE.md` instead of leaving it as an unstyled default control.
 - Favor configuration and reusable helpers over duplicated logic.
 - Make gameplay-related values easy to tune and keep magic numbers to a minimum.
 - Use descriptive names for scenes, nodes, functions, and variables.

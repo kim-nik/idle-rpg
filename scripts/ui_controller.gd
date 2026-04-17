@@ -118,7 +118,7 @@ const SPECIAL_BUTTON_CONFIGS := [
 
 @onready var top_wave_label: Label = $TopWaveBanner/TopWaveLabel
 @onready var wave_boss_button: Button = $TopWaveBanner/WaveBossButton
-@onready var gold_label: Label = $Panel/MarginContainer/Content/StatsContainer/GoldLabel
+@onready var gold_label: Label = $TopWaveBanner/GoldLabel
 @onready var wave_label: Label = $Panel/MarginContainer/Content/StatsContainer/WaveLabel
 @onready var campaign_status_label: Label = $Panel/MarginContainer/Content/StatsContainer/CampaignStatusLabel
 @onready var hero_stats_label: Label = $Panel/MarginContainer/Content/StatsContainer/HeroStatsLabel
