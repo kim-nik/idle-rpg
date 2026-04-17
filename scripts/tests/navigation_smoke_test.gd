@@ -26,7 +26,8 @@ func run(environment) -> Array[String]:
 		{"button": ui.upgrades_tab_button, "tab": ui.TAB_UPGRADES, "scroll": ui.upgrades_scroll},
 		{"button": ui.abilities_tab_button, "tab": ui.TAB_ABILITIES, "scroll": ui.abilities_scroll},
 		{"button": ui.map_tab_button, "tab": ui.TAB_MAP, "scroll": ui.map_scroll},
-		{"button": ui.settings_tab_button, "tab": ui.TAB_SETTINGS, "scroll": ui.settings_scroll}
+		{"button": ui.settings_tab_button, "tab": ui.TAB_SETTINGS, "scroll": ui.settings_scroll},
+		{"button": ui.debug_tab_button, "tab": ui.TAB_DEBUG, "scroll": ui.debug_scroll}
 	]
 
 	for item in tab_sequence:
@@ -43,9 +44,9 @@ func run(environment) -> Array[String]:
 		_expect(ui.active_tab == expected_tab, "Pressing %s tab button did not activate the tab" % expected_tab, failures)
 		_expect(expected_scroll.visible, "%s scroll container did not become visible" % expected_tab, failures)
 
-	ui.upgrades_tab_button.emit_signal("pressed")
+	ui.debug_tab_button.emit_signal("pressed")
 	await environment.runner.get_tree().process_frame
-	_expect(ui.active_tab == ui.TAB_UPGRADES, "Failed to return to upgrades tab", failures)
+	_expect(ui.active_tab == ui.TAB_DEBUG, "Failed to return to debug tab", failures)
 
 	var wave_manager = environment.get_wave_manager()
 	if wave_manager:
@@ -96,9 +97,6 @@ func run(environment) -> Array[String]:
 		failures
 	)
 
-	ui.upgrades_tab_button.emit_signal("pressed")
-	await environment.runner.get_tree().process_frame
-
 	var initial_gold = save_manager.save_data.gold
 	var quick_press = InputEventScreenTouch.new()
 	quick_press.index = 0
@@ -112,6 +110,12 @@ func run(environment) -> Array[String]:
 	ui.debug_gold_btn.emit_signal("gui_input", quick_release)
 	await environment.runner.get_tree().process_frame
 	_expect(save_manager.save_data.gold == initial_gold + 100000, "Debug gold button press did not update gold", failures)
+	ui.simulate_afk_btn.emit_signal("gui_input", quick_press)
+	ui.simulate_afk_btn.emit_signal("gui_input", quick_release)
+	await environment.runner.get_tree().process_frame
+	_expect(save_manager.save_data.pending_afk_seconds == 3600, "Debug AFK button did not queue one hour", failures)
+	_expect(ui.afk_popup_overlay_root.visible, "Debug AFK button did not open AFK rewards popup", failures)
+	ui._on_collect_afk_rewards_pressed()
 
 	var damage_level_before = upgrade_system.damage_level
 	var damage_press = InputEventScreenTouch.new()

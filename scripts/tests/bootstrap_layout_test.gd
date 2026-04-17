@@ -48,6 +48,9 @@ func run(environment) -> Array[String]:
 	var settings_scroll = environment.main_scene.get_node_or_null(
 		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/SettingsScroll"
 	) as ScrollContainer
+	var debug_scroll = environment.main_scene.get_node_or_null(
+		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/DebugScroll"
+	) as ScrollContainer
 	var viewport_width = int(ProjectSettings.get_setting("display/window/size/viewport_width", 0))
 	var viewport_height = int(ProjectSettings.get_setting("display/window/size/viewport_height", 0))
 	var orientation = int(ProjectSettings.get_setting("display/window/handheld/orientation", -1))
@@ -67,6 +70,7 @@ func run(environment) -> Array[String]:
 	_expect(abilities_scroll != null, "Abilities scroll container is missing", failures)
 	_expect(map_scroll != null, "Map scroll container is missing", failures)
 	_expect(settings_scroll != null, "Settings scroll container is missing", failures)
+	_expect(debug_scroll != null, "Debug scroll container is missing", failures)
 
 	if combat_background:
 		_expect(is_equal_approx(combat_background.size.y, 960.0), "Combat area is not half-screen height", failures)
@@ -87,35 +91,36 @@ func run(environment) -> Array[String]:
 	var upgrade_container = environment.main_scene.get_node_or_null(
 		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/UpgradesScroll/UpgradesTab/UpgradeContainer"
 	) as VBoxContainer
-	var debug_row = environment.main_scene.get_node_or_null(
-		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/UpgradesScroll/UpgradesTab/UpgradeContainer/DebugGoldRow"
-	) as HBoxContainer
 	var armor_row = environment.main_scene.get_node_or_null(
 		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/UpgradesScroll/UpgradesTab/UpgradeContainer/ArmorRow"
 	) as HBoxContainer
 	var regen_row = environment.main_scene.get_node_or_null(
 		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/UpgradesScroll/UpgradesTab/UpgradeContainer/RegenRow"
 	) as HBoxContainer
-	var reset_row = environment.main_scene.get_node_or_null(
-		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/UpgradesScroll/UpgradesTab/UpgradeContainer/ResetProgressRow"
-	) as HBoxContainer
+	var debug_gold_button = environment.main_scene.get_node_or_null(
+		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/DebugScroll/DebugTab/DebugGoldButton"
+	) as Button
+	var simulate_afk_button = environment.main_scene.get_node_or_null(
+		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/DebugScroll/DebugTab/SimulateAfkButton"
+	) as Button
+	var reset_button = environment.main_scene.get_node_or_null(
+		"UIArea/Panel/MarginContainer/Content/TabContentContainer/TabViewport/DebugScroll/DebugTab/ResetProgressButton"
+	) as Button
 
 	_expect(upgrade_container != null, "Upgrade stack is missing", failures)
 	_expect(armor_row != null, "Armor row is missing", failures)
 	_expect(regen_row != null, "Regen row is missing", failures)
-	_expect(debug_row != null, "Debug gold row is missing", failures)
-	_expect(reset_row != null, "Reset progress row is missing", failures)
+	_expect(debug_gold_button != null, "Debug tab is missing the gold button", failures)
+	_expect(simulate_afk_button != null, "Debug tab is missing the AFK simulation button", failures)
+	_expect(reset_button != null, "Debug tab is missing the reset button", failures)
 	if upgrades_scroll:
 		_expect(not upgrades_scroll.horizontal_scroll_mode, "Upgrades tab should not scroll horizontally", failures)
 	if tab_bar:
-		_expect(tab_bar.get_child_count() == 4, "Tab bar should contain four buttons", failures)
+		_expect(tab_bar.get_child_count() == 5, "Tab bar should contain five buttons", failures)
 	if settings_scroll:
 		_expect(not settings_scroll.visible, "Settings tab should be hidden by default", failures)
-
-	if upgrade_container and debug_row:
-		_expect(debug_row.get_parent() == upgrade_container, "Debug row is outside the upgrade stack", failures)
-	if upgrade_container and reset_row:
-		_expect(reset_row.get_parent() == upgrade_container, "Reset row is outside the upgrade stack", failures)
+	if debug_scroll:
+		_expect(not debug_scroll.visible, "Debug tab should be hidden by default", failures)
 
 	if upgrade_container:
 		for child in upgrade_container.get_children():
@@ -142,5 +147,8 @@ func run(environment) -> Array[String]:
 		_expect(ui.map_start_selected_button != null, "Map tab is missing the start button", failures)
 		_expect(ui.settings_auto_next_wave_toggle != null, "Settings tab is missing Auto Next Wave toggle", failures)
 		_expect(ui.settings_auto_start_boss_toggle != null, "Settings tab is missing Auto Start Boss toggle", failures)
+		_expect(ui.debug_gold_btn != null, "Debug tab is missing the gold control binding", failures)
+		_expect(ui.simulate_afk_btn != null, "Debug tab is missing the AFK control binding", failures)
+		_expect(ui.reset_progress_btn != null, "Debug tab is missing the reset control binding", failures)
 
 	return failures

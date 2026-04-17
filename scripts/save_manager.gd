@@ -2,8 +2,9 @@ extends Node
 
 signal save_data_changed(change_reason: String)
 
+const AfkRewardServiceRef = preload("res://scripts/progression/afk_reward_service.gd")
 const SAVE_FILE := "user://save.dat"
-const SAVE_VERSION := 7
+const SAVE_VERSION := 8
 const DEFAULT_SAVE_DATA := {
 	"version": SAVE_VERSION,
 	"gold": 0,
@@ -28,11 +29,16 @@ const DEFAULT_SAVE_DATA := {
 	"campaign_selected_boss": false,
 	"setting_auto_next_wave": true,
 	"setting_auto_start_boss": false,
+	"last_seen_unix": 0,
+	"pending_afk_gold": 0,
+	"pending_afk_seconds": 0,
 	"unlocked_ability_ids": ["evil_eye", "leg_sweep", "punch"],
 	"equipped_ability_slots": ["", "", "", "", "", "", "", ""]
 }
 
 var save_data := duplicate_default_save_data()
+var _afk_reward_service := AfkRewardServiceRef.new()
+var _time_provider: Callable
 
 func _ready() -> void:
 	load_game()
@@ -65,6 +71,55 @@ func add_monsters_killed(count: int = 1, persist_immediately: bool = false) -> i
 		return int(save_data.monsters_killed)
 	_emit_save_data_changed("monsters_killed")
 	return int(save_data.monsters_killed)
+
+func set_time_provider(provider: Callable) -> void:
+	_time_provider = provider
+
+func clear_time_provider() -> void:
+	_time_provider = Callable()
+
+func get_current_unix_time() -> int:
+	if _time_provider.is_valid():
+		return maxi(int(_time_provider.call()), 0)
+	return maxi(int(Time.get_unix_time_from_system()), 0)
+
+func mark_last_seen_now(persist_immediately: bool = true, now_unix: int = -1) -> int:
+	var resolved_now = _resolve_now_unix(now_unix)
+	save_data.last_seen_unix = resolved_now
+	if persist_immediately:
+		_persist("last_seen")
+	else:
+		_emit_save_data_changed("last_seen")
+	return resolved_now
+
+func queue_afk_rewards(now_unix: int = -1) -> Dictionary:
+	var resolved_now = _resolve_now_unix(now_unix)
+	var snapshot = _afk_reward_service.queue_rewards(save_data, resolved_now)
+	_apply_afk_snapshot(snapshot, "afk_rewards")
+	return snapshot
+
+func simulate_afk_rewards(elapsed_seconds: int, now_unix: int = -1) -> Dictionary:
+	var resolved_now = _resolve_now_unix(now_unix)
+	var simulated_save = save_data.duplicate(true)
+	simulated_save.last_seen_unix = maxi(resolved_now - maxi(elapsed_seconds, 0), 0)
+	var snapshot = _afk_reward_service.queue_rewards(simulated_save, resolved_now)
+	_apply_afk_snapshot(snapshot, "afk_debug")
+	return snapshot
+
+func collect_afk_rewards(persist_immediately: bool = true) -> int:
+	var reward_gold = max(int(save_data.get("pending_afk_gold", 0)), 0)
+	if reward_gold <= 0:
+		return 0
+
+	save_data.gold = max(int(save_data.get("gold", 0)) + reward_gold, 0)
+	save_data.pending_afk_gold = 0
+	save_data.pending_afk_seconds = 0
+
+	if persist_immediately:
+		_persist("afk_collect")
+	else:
+		_emit_save_data_changed("afk_collect")
+	return reward_gold
 
 func load_game() -> void:
 	if FileAccess.file_exists(SAVE_FILE):
@@ -106,6 +161,9 @@ func _migrate_save_data(loaded_data: Dictionary) -> Dictionary:
 		source_version = 6
 	if source_version < 7:
 		working_data = _migrate_to_v7(working_data)
+		source_version = 7
+	if source_version < 8:
+		working_data = _migrate_to_v8(working_data)
 
 	return _merge_with_defaults(working_data)
 
@@ -177,6 +235,17 @@ func _migrate_to_v7(loaded_data: Dictionary) -> Dictionary:
 	migrated_data.version = 7
 	return migrated_data
 
+func _migrate_to_v8(loaded_data: Dictionary) -> Dictionary:
+	var migrated_data := loaded_data.duplicate(true)
+	if not migrated_data.has("last_seen_unix"):
+		migrated_data.last_seen_unix = 0
+	if not migrated_data.has("pending_afk_gold"):
+		migrated_data.pending_afk_gold = 0
+	if not migrated_data.has("pending_afk_seconds"):
+		migrated_data.pending_afk_seconds = 0
+	migrated_data.version = 8
+	return migrated_data
+
 func _merge_with_defaults(loaded_data: Dictionary) -> Dictionary:
 	var merged_data := duplicate_default_save_data()
 	for key in loaded_data.keys():
@@ -202,3 +271,13 @@ func _persist(change_reason: String) -> void:
 
 func _emit_save_data_changed(change_reason: String) -> void:
 	emit_signal("save_data_changed", change_reason)
+
+func _resolve_now_unix(now_unix: int) -> int:
+	return get_current_unix_time() if now_unix < 0 else maxi(now_unix, 0)
+
+func _apply_afk_snapshot(snapshot: Dictionary, persist_reason: String) -> void:
+	save_data.last_seen_unix = int(snapshot.get("last_seen_unix", save_data.get("last_seen_unix", 0)))
+	save_data.pending_afk_gold = max(int(snapshot.get("pending_afk_gold", save_data.get("pending_afk_gold", 0))), 0)
+	save_data.pending_afk_seconds = max(int(snapshot.get("pending_afk_seconds", save_data.get("pending_afk_seconds", 0))), 0)
+	if bool(snapshot.get("did_change", false)):
+		_persist(persist_reason)

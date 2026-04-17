@@ -14,10 +14,13 @@ const DAMAGE_TEXT_OFFSET := CombatFeedbackControllerRef.DAMAGE_TEXT_OFFSET
 @onready var ui_controller: CanvasLayer = $UIArea
 
 var ability_system: Node
+var save_manager: Node
 var combat_feedback := CombatFeedbackControllerRef.new()
 var _defeat_reload_pending := false
+var _afk_resume_pending := false
 
 func _ready() -> void:
+	save_manager = GameServicesRef.get_save_manager(self)
 	ability_system = GameServicesRef.get_ability_system(self)
 	combat_feedback.setup(self, ability_effects)
 
@@ -43,6 +46,21 @@ func _ready() -> void:
 	for monster in monster_container.get_children():
 		_on_monster_spawned(monster)
 
+	_queue_afk_rewards()
+
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_CLOSE_REQUEST:
+			_afk_resume_pending = true
+			_mark_last_seen()
+		NOTIFICATION_APPLICATION_RESUMED, NOTIFICATION_APPLICATION_FOCUS_IN:
+			if _afk_resume_pending:
+				_afk_resume_pending = false
+				_queue_afk_rewards()
+
+func _exit_tree() -> void:
+	_mark_last_seen()
+
 func _process(delta: float) -> void:
 	hero.update_attack_cooldown(delta)
 	if hero.is_attack_ready():
@@ -63,12 +81,15 @@ func capture_debug_screenshot(file_name: String = "main_debug.png") -> String:
 	var debug_dir = "user://debug"
 	var absolute_debug_dir = ProjectSettings.globalize_path(debug_dir)
 	DirAccess.make_dir_recursive_absolute(absolute_debug_dir)
-	await get_tree().process_frame
-	await RenderingServer.frame_post_draw
 
 	var image: Image = null
 	var display_name = DisplayServer.get_name()
-	if display_name != "headless":
+	if display_name == "headless":
+		push_warning("Viewport capture is unavailable in this renderer. Saving a debug layout image instead.")
+		image = _build_debug_layout_image()
+	else:
+		await get_tree().process_frame
+		await RenderingServer.frame_post_draw
 		var viewport_texture = get_viewport().get_texture()
 		if viewport_texture:
 			image = viewport_texture.get_image()
@@ -168,3 +189,11 @@ func _schedule_defeat_reload() -> void:
 
 func _reload_current_scene() -> void:
 	get_tree().reload_current_scene()
+
+func _mark_last_seen() -> void:
+	if save_manager and save_manager.has_method("mark_last_seen_now"):
+		save_manager.mark_last_seen_now()
+
+func _queue_afk_rewards() -> void:
+	if save_manager and save_manager.has_method("queue_afk_rewards"):
+		save_manager.queue_afk_rewards()

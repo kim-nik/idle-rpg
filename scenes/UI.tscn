@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/MapTab.tscn" id="4_map"]
 [ext_resource type="PackedScene" path="res://scenes/SettingsTab.tscn" id="5_settings"]
 [ext_resource type="Theme" path="res://resources/kenney_ui_theme.tres" id="6_theme"]
+[ext_resource type="PackedScene" path="res://scenes/DebugTab.tscn" id="7_debug"]
 
 [node name="UIArea" type="CanvasLayer"]
 script = ExtResource("1_ui")
@@ -178,6 +179,18 @@ horizontal_scroll_mode = 0
 
 [node name="SettingsTab" parent="Panel/MarginContainer/Content/TabContentContainer/TabViewport/SettingsScroll" instance=ExtResource("5_settings")]
 
+[node name="DebugScroll" type="ScrollContainer" parent="Panel/MarginContainer/Content/TabContentContainer/TabViewport"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="DebugTab" parent="Panel/MarginContainer/Content/TabContentContainer/TabViewport/DebugScroll" instance=ExtResource("7_debug")]
+
 [node name="TabBar" type="HBoxContainer" parent="Panel/MarginContainer/Content"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -210,6 +223,13 @@ layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 64)
 text = "Settings"
+toggle_mode = true
+
+[node name="DebugTabButton" type="Button" parent="Panel/MarginContainer/Content/TabBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 64)
+text = "Debug"
 toggle_mode = true
 
 [node name="PopupOverlay" type="ColorRect" parent="."]
@@ -303,4 +323,79 @@ size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 64)
 theme_override_font_sizes/font_size = 22
 text = "Add"
+mouse_filter = 1
+
+[node name="AfkPopupOverlay" type="ColorRect" parent="."]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+color = Color(0, 0, 0, 0)
+
+[node name="PopupPanel" type="PanelContainer" parent="AfkPopupOverlay"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -180.0
+offset_right = 320.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme = ExtResource("6_theme")
+
+[node name="PopupMargin" type="MarginContainer" parent="AfkPopupOverlay/PopupPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+mouse_filter = 2
+
+[node name="PopupContent" type="VBoxContainer" parent="AfkPopupOverlay/PopupPanel/PopupMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="AfkPopupOverlay/PopupPanel/PopupMargin/PopupContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "AFK Rewards"
+horizontal_alignment = 1
+mouse_filter = 2
+
+[node name="DurationLabel" type="Label" parent="AfkPopupOverlay/PopupPanel/PopupMargin/PopupContent"]
+layout_mode = 2
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+text = "Away for 0m at Chapter 1, Wave 1."
+mouse_filter = 2
+
+[node name="GoldLabel" type="Label" parent="AfkPopupOverlay/PopupPanel/PopupMargin/PopupContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+text = "Earned 0 gold."
+mouse_filter = 2
+
+[node name="Spacer" type="Control" parent="AfkPopupOverlay/PopupPanel/PopupMargin/PopupContent"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="CollectButton" type="Button" parent="AfkPopupOverlay/PopupPanel/PopupMargin/PopupContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 72)
+theme_override_font_sizes/font_size = 24
+text = "Collect"
 mouse_filter = 1

@@ -113,6 +113,8 @@ func run(environment) -> Array[String]:
 
 	wave_manager._on_regular_monster_died(6)
 	wave_manager._process(wave_manager.BETWEEN_WAVE_DELAY)
+	_expect(wave_manager.pending_boss_kind == "wave", "Regular wave clear should queue a wave boss", failures)
+	_expect(wave_manager.start_pending_wave_boss(), "Pending wave boss should start when requested", failures)
 	wave_manager._on_boss_defeated(6)
 	wave_manager._process(wave_manager.BETWEEN_WAVE_DELAY)
 	_expect(wave_manager.current_wave == 4, "Auto Next Wave OFF should repeat the same wave after the wave boss", failures)

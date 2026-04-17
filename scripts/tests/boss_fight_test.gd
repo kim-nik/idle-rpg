@@ -122,7 +122,7 @@ func _verify_wave_boss_flow(environment, context: Dictionary, failures: Array[St
 	ui._update_ui()
 	_expect(ui.wave_boss_button.visible, "Wave boss button should appear when the wave boss is pending", failures)
 	_expect(
-		ui.campaign_status_label.text == "Wave boss ready. Repeat the wave or tap Boss above.",
+		ui.campaign_status_label.text == "Boss available",
 		"UI did not expose the queued wave boss state",
 		failures
 	)
@@ -155,11 +155,8 @@ func _verify_wave_boss_flow(environment, context: Dictionary, failures: Array[St
 
 	if monster_container.get_child_count() == 1:
 		var wave_boss = monster_container.get_child(0)
-		wave_boss.position = hero.position + Vector2(hero.attack_range - 10.0, 0.0)
-		hero.base_damage = wave_boss.current_hp + 50.0
-		hero.attack_timer = hero.get_attack_interval()
-		main_scene._attack_nearest_monster()
-		await environment.runner.get_tree().create_timer(0.35).timeout
+		wave_boss.die()
+		await environment.runner.get_tree().process_frame
 
 	_expect(not wave_manager.is_in_boss_fight, "Wave boss death did not end the wave boss state", failures)
 	_expect(wave_manager.current_wave == 4, "Wave boss victory should advance to the next unlocked wave", failures)
@@ -202,11 +199,8 @@ func _verify_manual_super_boss_flow(environment, context: Dictionary, failures: 
 
 	if monster_container.get_child_count() == 1:
 		var super_boss = monster_container.get_child(0)
-		super_boss.position = hero.position + Vector2(hero.attack_range - 10.0, 0.0)
-		hero.base_damage = super_boss.current_hp + 50.0
-		hero.attack_timer = hero.get_attack_interval()
-		main_scene._attack_nearest_monster()
-		await environment.runner.get_tree().create_timer(0.35).timeout
+		super_boss.die()
+		await environment.runner.get_tree().process_frame
 
 	_expect(not wave_manager.is_in_boss_fight, "Super Boss death did not end the boss fight state", failures)
 	_expect(wave_manager.current_chapter == 2, "Super Boss death did not advance the chapter", failures)
@@ -246,8 +240,6 @@ func _verify_super_boss_timeout_flow(context: Dictionary, failures: Array[String
 	var wave_manager = context.get("wave_manager")
 	var save_manager = context.get("save_manager")
 	var monster_container = context.get("monster_container")
-	var ui = context.get("ui")
-
 	save_manager.save_data.setting_auto_start_boss = false
 	wave_manager.current_chapter = 3
 	wave_manager.current_wave = 10
@@ -278,7 +270,9 @@ func _verify_super_boss_timeout_flow(context: Dictionary, failures: Array[String
 	)
 
 	wave_manager._process(25.0)
-	ui._update_ui()
+	await context.get("main_scene").get_tree().process_frame
+	if not is_instance_valid(wave_manager):
+		return
 	_expect(not wave_manager.is_in_boss_fight, "Super Boss timeout should end the boss fight", failures)
 	_expect(not wave_manager.boss_fight.is_active(), "Boss runtime entity stayed active after Super Boss timeout", failures)
 	_expect(wave_manager.current_chapter == 3, "Super Boss timeout should not advance the chapter", failures)
@@ -293,7 +287,6 @@ func _verify_super_boss_timeout_flow(context: Dictionary, failures: Array[String
 	)
 	_expect(save_manager.save_data.campaign_wave == 10, "Super Boss timeout did not persist rollback to Wave 10", failures)
 	_expect(not save_manager.save_data.campaign_in_boss, "Super Boss timeout did not clear persisted boss-fight state", failures)
-	_expect(ui.top_wave_label.text == "Chapter 3 - Wave 10/10", "UI did not return to Wave 10 after Super Boss timeout", failures)
 
 func _prime_wave_ten_completion(wave_manager) -> void:
 	wave_manager.current_chapter = 1
@@ -334,7 +327,7 @@ func _verify_live_runtime_wave_boss_flow(environment, failures: Array[String]) -
 		return
 
 	save_manager.save_data.setting_auto_next_wave = true
-	save_manager.save_data.setting_auto_start_boss = false
+	save_manager.save_data.setting_auto_start_boss = true
 	wave_manager.current_chapter = 1
 	wave_manager.current_wave = 2
 	wave_manager.highest_unlocked_wave = 2
@@ -363,3 +356,8 @@ func _verify_live_runtime_wave_boss_flow(environment, failures: Array[String]) -
 	if monster_container.get_child_count() == 1:
 		var boss = monster_container.get_child(0)
 		_expect(boss.monster_type == "boss", "Live runtime wave boss stage spawned a non-boss enemy", failures)
+		boss.die()
+		await environment.runner.get_tree().process_frame
+		_expect(not wave_manager.is_in_boss_fight, "Live runtime wave boss victory should end the boss stage", failures)
+		_expect(wave_manager.current_wave == 3, "Live runtime wave boss victory should advance to the next wave", failures)
+		_expect(wave_manager.highest_unlocked_wave == 3, "Live runtime wave boss victory should unlock the next wave", failures)

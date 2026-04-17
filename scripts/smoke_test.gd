@@ -6,6 +6,7 @@ const TEST_CASE_SCRIPTS := [
 	"res://scripts/tests/ui_test.gd",
 	"res://scripts/tests/navigation_smoke_test.gd",
 	"res://scripts/tests/persistence_test.gd",
+	"res://scripts/tests/afk_rewards_test.gd",
 	"res://scripts/tests/boss_fight_test.gd",
 	"res://scripts/tests/combat_wave_test.gd",
 	"res://scripts/tests/combat_feedback_test.gd",
@@ -43,7 +44,8 @@ func run_smoke_test() -> void:
 			continue
 
 		var test_case = test_script.new()
-		var case_name := test_case.get_name()
+		var case_name: String = test_case.get_name()
+		print("  starting: %s" % case_name)
 		var failures: Array[String] = await test_case.run(environment)
 
 		if failures.is_empty():

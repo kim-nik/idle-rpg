@@ -8,6 +8,7 @@ const TAB_UPGRADES := "upgrades"
 const TAB_ABILITIES := "abilities"
 const TAB_MAP := "map"
 const TAB_SETTINGS := "settings"
+const TAB_DEBUG := "debug"
 const LIVE_REFRESH_INTERVAL := 0.1
 const ABILITY_TILE_SCRIPT := preload("res://scripts/ui/ability_tile_button.gd")
 const ABILITY_TILE_SIZE := Vector2(0, 144)
@@ -93,29 +94,6 @@ const UPGRADE_BUTTON_CONFIGS := [
 		"x100_node": "CritDmgX100Button"
 	}
 ]
-const SPECIAL_BUTTON_CONFIGS := [
-	{
-		"action_id": "debug_gold",
-		"row": "DebugGoldRow",
-		"primary_alias": "debug_gold_btn",
-		"primary_node": "DebugGoldButton",
-		"x10_alias": "debug_gold_x10_btn",
-		"x10_node": "DebugGoldX10Button",
-		"x100_alias": "debug_gold_x100_btn",
-		"x100_node": "DebugGoldX100Button"
-	},
-	{
-		"action_id": "reset_progress",
-		"row": "ResetProgressRow",
-		"primary_alias": "reset_progress_btn",
-		"primary_node": "ResetProgressButton",
-		"x10_alias": "reset_progress_x10_btn",
-		"x10_node": "ResetProgressX10Button",
-		"x100_alias": "reset_progress_x100_btn",
-		"x100_node": "ResetProgressX100Button"
-	}
-]
-
 @onready var top_wave_label: Label = $TopWaveBanner/TopWaveLabel
 @onready var wave_boss_button: Button = $TopWaveBanner/WaveBossButton
 @onready var gold_label: Label = $TopWaveBanner/GoldLabel
@@ -127,17 +105,21 @@ const SPECIAL_BUTTON_CONFIGS := [
 @onready var abilities_scroll: ScrollContainer = $Panel/MarginContainer/Content/TabContentContainer/TabViewport/AbilitiesScroll
 @onready var map_scroll: ScrollContainer = $Panel/MarginContainer/Content/TabContentContainer/TabViewport/MapScroll
 @onready var settings_scroll: ScrollContainer = $Panel/MarginContainer/Content/TabContentContainer/TabViewport/SettingsScroll
+@onready var debug_scroll: ScrollContainer = $Panel/MarginContainer/Content/TabContentContainer/TabViewport/DebugScroll
 
 @onready var upgrades_tab_root: Control = upgrades_scroll.get_node("UpgradesTab")
 @onready var abilities_tab_root: Control = abilities_scroll.get_node("AbilitiesTab")
 @onready var map_tab_root: Control = map_scroll.get_node("MapTab")
 @onready var settings_tab_root: Control = settings_scroll.get_node("SettingsTab")
+@onready var debug_tab_root: Control = debug_scroll.get_node("DebugTab")
 
 @onready var upgrades_tab_button: Button = $Panel/MarginContainer/Content/TabBar/UpgradesTabButton
 @onready var abilities_tab_button: Button = $Panel/MarginContainer/Content/TabBar/AbilitiesTabButton
 @onready var map_tab_button: Button = $Panel/MarginContainer/Content/TabBar/MapTabButton
 @onready var settings_tab_button: Button = $Panel/MarginContainer/Content/TabBar/SettingsTabButton
+@onready var debug_tab_button: Button = $Panel/MarginContainer/Content/TabBar/DebugTabButton
 @onready var popup_overlay_root: ColorRect = $PopupOverlay
+@onready var afk_popup_overlay_root: ColorRect = $AfkPopupOverlay
 
 var damage_btn: Button
 var damage_x10_btn: Button
@@ -161,11 +143,8 @@ var crit_dmg_btn: Button
 var crit_dmg_x10_btn: Button
 var crit_dmg_x100_btn: Button
 var debug_gold_btn: Button
-var debug_gold_x10_btn: Button
-var debug_gold_x100_btn: Button
 var reset_progress_btn: Button
-var reset_progress_x10_btn: Button
-var reset_progress_x100_btn: Button
+var simulate_afk_btn: Button
 
 var ability_slot_buttons: Array[Button] = []
 var ability_library_buttons: Dictionary = {}
@@ -177,6 +156,9 @@ var ability_popup_meta_label: Label
 var ability_popup_status_label: Label
 var ability_popup_close_button: Button
 var ability_popup_action_button: Button
+var afk_popup_duration_label: Label
+var afk_popup_gold_label: Label
+var afk_popup_collect_button: Button
 var map_chapter_label: Label
 var map_current_state_label: Label
 var map_cleared_chapters_label: Label
@@ -210,10 +192,14 @@ func _ready() -> void:
 
 	_cache_upgrade_controls()
 	_cache_ability_controls()
+	_cache_afk_popup_controls()
+	_cache_debug_controls()
 	_cache_map_controls()
 	_cache_settings_controls()
 	_bind_upgrade_buttons()
 	_bind_ability_buttons()
+	_bind_afk_popup_controls()
+	_bind_debug_buttons()
 	_bind_map_buttons()
 	_bind_settings_buttons()
 	_bind_tab_buttons()
@@ -238,8 +224,6 @@ func _process(delta: float) -> void:
 func _cache_upgrade_controls() -> void:
 	var upgrade_container = upgrades_tab_root.get_node("UpgradeContainer")
 	for config in UPGRADE_BUTTON_CONFIGS:
-		_cache_button_group(upgrade_container, config)
-	for config in SPECIAL_BUTTON_CONFIGS:
 		_cache_button_group(upgrade_container, config)
 
 func _cache_button_group(root: Node, config: Dictionary) -> void:
@@ -267,6 +251,16 @@ func _cache_ability_controls() -> void:
 	ability_popup_status_label = popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/PopupStatusLabel")
 	ability_popup_close_button = popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/PopupButtons/PopupCloseButton")
 	ability_popup_action_button = popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/PopupButtons/PopupActionButton")
+
+func _cache_afk_popup_controls() -> void:
+	afk_popup_duration_label = afk_popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/DurationLabel")
+	afk_popup_gold_label = afk_popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/GoldLabel")
+	afk_popup_collect_button = afk_popup_overlay_root.get_node("PopupPanel/PopupMargin/PopupContent/CollectButton")
+
+func _cache_debug_controls() -> void:
+	debug_gold_btn = debug_tab_root.get_node("DebugGoldButton")
+	simulate_afk_btn = debug_tab_root.get_node("SimulateAfkButton")
+	reset_progress_btn = debug_tab_root.get_node("ResetProgressButton")
 
 func _cache_map_controls() -> void:
 	map_chapter_label = map_tab_root.get_node("ChapterLabel")
@@ -297,21 +291,6 @@ func _bind_upgrade_buttons() -> void:
 			_purchase_upgrade_multiple(upgrade_id, 100)
 		)
 
-	_register_scrollable_button(debug_gold_btn, _on_debug_gold_clicked)
-	_register_scrollable_button(debug_gold_x10_btn, func() -> void:
-		_add_debug_gold(10)
-	)
-	_register_scrollable_button(debug_gold_x100_btn, func() -> void:
-		_add_debug_gold(100)
-	)
-	_register_scrollable_button(reset_progress_btn, _on_reset_progress_clicked)
-	_register_scrollable_button(reset_progress_x10_btn, func() -> void:
-		_reset_progress_multiple(10)
-	)
-	_register_scrollable_button(reset_progress_x100_btn, func() -> void:
-		_reset_progress_multiple(100)
-	)
-
 func _bind_ability_buttons() -> void:
 	ability_popup_close_button.pressed.connect(_close_ability_popup)
 	ability_popup_action_button.pressed.connect(_on_popup_ability_action_pressed)
@@ -327,6 +306,14 @@ func _bind_map_buttons() -> void:
 		)
 	_register_scrollable_button(map_boss_button, _on_map_boss_pressed)
 	_register_scrollable_button(map_start_selected_button, _on_map_start_selected_pressed)
+
+func _bind_afk_popup_controls() -> void:
+	_register_scrollable_button(afk_popup_collect_button, _on_collect_afk_rewards_pressed)
+
+func _bind_debug_buttons() -> void:
+	_register_scrollable_button(debug_gold_btn, _on_debug_gold_clicked)
+	_register_scrollable_button(simulate_afk_btn, _on_simulate_afk_rewards_pressed)
+	_register_scrollable_button(reset_progress_btn, _on_reset_progress_clicked)
 
 func _bind_settings_buttons() -> void:
 	_register_scrollable_button(settings_auto_next_wave_toggle, func() -> void:
@@ -348,6 +335,9 @@ func _bind_tab_buttons() -> void:
 	)
 	settings_tab_button.pressed.connect(func() -> void:
 		set_active_tab(TAB_SETTINGS)
+	)
+	debug_tab_button.pressed.connect(func() -> void:
+		set_active_tab(TAB_DEBUG)
 	)
 
 func _bind_top_banner_buttons() -> void:
@@ -386,10 +376,12 @@ func set_active_tab(tab_name: String) -> void:
 	abilities_scroll.visible = tab_name == TAB_ABILITIES
 	map_scroll.visible = tab_name == TAB_MAP
 	settings_scroll.visible = tab_name == TAB_SETTINGS
+	debug_scroll.visible = tab_name == TAB_DEBUG
 	upgrades_tab_button.button_pressed = tab_name == TAB_UPGRADES
 	abilities_tab_button.button_pressed = tab_name == TAB_ABILITIES
 	map_tab_button.button_pressed = tab_name == TAB_MAP
 	settings_tab_button.button_pressed = tab_name == TAB_SETTINGS
+	debug_tab_button.button_pressed = tab_name == TAB_DEBUG
 	_request_refresh()
 
 func on_ability_tile_pressed(tile: Button) -> void:
@@ -466,6 +458,7 @@ func _update_ui() -> void:
 		)
 
 	_update_abilities_ui()
+	_update_afk_popup()
 	_campaign_ui.update_map_ui(
 		map_chapter_label,
 		map_current_state_label,
@@ -558,6 +551,34 @@ func _update_ability_popup() -> void:
 func _close_ability_popup() -> void:
 	ability_popup_overlay.visible = false
 
+func _update_afk_popup() -> void:
+	if afk_popup_overlay_root == null or save_manager == null:
+		return
+
+	var pending_gold = max(int(save_manager.save_data.get("pending_afk_gold", 0)), 0)
+	var pending_seconds = max(int(save_manager.save_data.get("pending_afk_seconds", 0)), 0)
+	var chapter_number = max(int(save_manager.save_data.get("campaign_chapter", 1)), 1)
+	var wave_number = clampi(int(save_manager.save_data.get("campaign_wave", 1)), 1, 10)
+	var has_rewards = pending_gold > 0 and pending_seconds >= 60
+
+	afk_popup_overlay_root.visible = has_rewards
+	if not has_rewards:
+		return
+
+	afk_popup_duration_label.text = "Away for %s at Chapter %d, Wave %d." % [
+		_format_afk_duration(pending_seconds),
+		chapter_number,
+		wave_number
+	]
+	afk_popup_gold_label.text = "Earned %d gold." % pending_gold
+
+func _format_afk_duration(total_seconds: int) -> String:
+	var hours = int(total_seconds / 3600)
+	var minutes = int((total_seconds % 3600) / 60)
+	if hours > 0:
+		return "%dh %dm" % [hours, minutes]
+	return "%dm" % minutes
+
 func _on_popup_ability_action_pressed() -> void:
 	var definition = ability_system.get_definition(selected_ability_id)
 	if definition == null:
@@ -573,6 +594,18 @@ func _on_popup_ability_action_pressed() -> void:
 	_request_refresh()
 	_update_ui()
 	_close_ability_popup()
+
+func _on_collect_afk_rewards_pressed() -> void:
+	if save_manager and save_manager.has_method("collect_afk_rewards"):
+		save_manager.collect_afk_rewards()
+	_request_refresh()
+	_update_ui()
+
+func _on_simulate_afk_rewards_pressed() -> void:
+	if save_manager and save_manager.has_method("simulate_afk_rewards"):
+		save_manager.simulate_afk_rewards(60 * 60)
+	_request_refresh()
+	_update_ui()
 
 func _find_first_free_ability_slot() -> int:
 	for slot_index in range(ability_slot_buttons.size()):

@@ -40,6 +40,7 @@ func run(environment) -> Array[String]:
 	_expect(not ui.abilities_scroll.visible, "Abilities scroll should be hidden by default", failures)
 	_expect(not ui.map_scroll.visible, "Map scroll should be hidden by default", failures)
 	_expect(not ui.settings_scroll.visible, "Settings scroll should be hidden by default", failures)
+	_expect(not ui.debug_scroll.visible, "Debug scroll should be hidden by default", failures)
 	_expect(ui._is_quick_tap(120, 8.0), "Quick tap heuristic should accept a short tap", failures)
 	_expect(not ui._is_quick_tap(250, 8.0), "Quick tap heuristic should reject long holds", failures)
 	_expect(not ui._is_quick_tap(120, 30.0), "Quick tap heuristic should reject drags", failures)
@@ -118,6 +119,7 @@ func run(environment) -> Array[String]:
 	_expect(not ui.map_boss_button.disabled, "Super Boss button should unlock after boss access is granted", failures)
 	_expect(ui.map_boss_button.button_pressed, "Super Boss button should become selected", failures)
 	ui._on_map_start_selected_pressed()
+	await environment.runner.get_tree().process_frame
 	_expect(wave_manager.is_in_boss_fight, "Starting the selected boss did not enter boss fight state", failures)
 	ui._update_ui()
 	_expect(ui.top_wave_label.text == "Chapter 1 - Super Boss", "Top wave label did not switch to super boss state", failures)
@@ -128,9 +130,10 @@ func run(environment) -> Array[String]:
 		failures
 	)
 	var boss_container = environment.get_monster_container()
-	_expect(boss_container.get_child_count() == 1, "Boss fight should spawn the boss immediately", failures)
-	if boss_container.get_child_count() == 1:
-		var boss = boss_container.get_child(0)
+	var boss_monsters = boss_container.get_children().filter(func(child): return child is Node2D and child.monster_type == "boss")
+	_expect(boss_monsters.size() == 1, "Boss fight should spawn exactly one boss monster", failures)
+	if boss_monsters.size() == 1:
+		var boss = boss_monsters[0]
 		_expect(boss.monster_type == "boss", "Boss fight did not spawn the dedicated boss monster", failures)
 
 	ui.set_active_tab(ui.TAB_SETTINGS)
@@ -140,6 +143,13 @@ func run(environment) -> Array[String]:
 	ui._on_auto_start_boss_toggled(true)
 	_expect(not save_manager.save_data.setting_auto_next_wave, "Auto Next Wave setting did not persist from UI", failures)
 	_expect(save_manager.save_data.setting_auto_start_boss, "Auto Start Boss setting did not persist from UI", failures)
+
+	ui.set_active_tab(ui.TAB_DEBUG)
+	_expect(ui.active_tab == ui.TAB_DEBUG, "Debug tab did not become active", failures)
+	_expect(ui.debug_scroll.visible, "Debug scroll should be visible on debug tab", failures)
+	_expect(ui.debug_gold_btn != null, "Debug tab should expose the gold button", failures)
+	_expect(ui.simulate_afk_btn != null, "Debug tab should expose the AFK button", failures)
+	_expect(ui.reset_progress_btn != null, "Debug tab should expose the reset button", failures)
 
 	ui.set_active_tab(ui.TAB_UPGRADES)
 

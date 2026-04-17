@@ -182,54 +182,6 @@ custom_minimum_size = Vector2(124, 88)
 theme_override_font_sizes/font_size = 24
 text = "x100"
 
-[node name="DebugGoldRow" type="HBoxContainer" parent="UpgradeContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 8
-
-[node name="DebugGoldButton" type="Button" parent="UpgradeContainer/DebugGoldRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 88)
-theme_override_font_sizes/font_size = 28
-text = "Debug +100K Gold"
-
-[node name="DebugGoldX10Button" type="Button" parent="UpgradeContainer/DebugGoldRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(124, 88)
-theme_override_font_sizes/font_size = 24
-text = "x10"
-
-[node name="DebugGoldX100Button" type="Button" parent="UpgradeContainer/DebugGoldRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(124, 88)
-theme_override_font_sizes/font_size = 24
-text = "x100"
-
-[node name="ResetProgressRow" type="HBoxContainer" parent="UpgradeContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 8
-
-[node name="ResetProgressButton" type="Button" parent="UpgradeContainer/ResetProgressRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 88)
-theme_override_font_sizes/font_size = 28
-text = "Reset Progress"
-
-[node name="ResetProgressX10Button" type="Button" parent="UpgradeContainer/ResetProgressRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(124, 88)
-theme_override_font_sizes/font_size = 24
-text = "x10"
-
-[node name="ResetProgressX100Button" type="Button" parent="UpgradeContainer/ResetProgressRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(124, 88)
-theme_override_font_sizes/font_size = 24
-text = "x100"
-
 [node name="BottomSpacer" type="Control" parent="."]
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 2

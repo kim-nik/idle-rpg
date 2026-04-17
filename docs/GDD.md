@@ -19,8 +19,8 @@
 - [x] Permanent growth through gold and stat upgrades
 - [x] Save/load persistence for core progression
 - [x] Combat feedback for damage, crits, and ability impact
-- [ ] Campaign mode with chapter progression, boss gate, rollback-on-defeat, and automation settings ([detailed plan](./CAMPAIGN_MODE_PLAN.md))
-- [ ] AFK / offline reward collection on return
+- [x] Campaign mode with chapter progression, boss gate, rollback-on-defeat, and automation settings ([detailed plan](./CAMPAIGN_MODE_PLAN.md))
+- [x] AFK / offline reward collection on return
 - [ ] Farm acceleration systems such as speed-up or auto-clear
 
 ### Hero Progression

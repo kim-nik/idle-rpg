@@ -24,6 +24,8 @@ func reset_progress() -> void:
 	if not has_autoloads():
 		return
 
+	if save_manager and save_manager.has_method("clear_time_provider"):
+		save_manager.clear_time_provider()
 	save_manager.reset()
 	upgrade_system.load_from_save()
 	ability_system.load_from_save()
@@ -69,6 +71,8 @@ func restore_original_state() -> void:
 	await clear_main_scene()
 
 	if save_manager:
+		if save_manager.has_method("clear_time_provider"):
+			save_manager.clear_time_provider()
 		save_manager.save_data = original_save_data.duplicate(true)
 		save_manager.save()
 

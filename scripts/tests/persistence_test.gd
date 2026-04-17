@@ -1,7 +1,7 @@
 extends "res://scripts/tests/test_case.gd"
 
 const EXPECTED_DEFAULT_SAVE := {
-	"version": 7,
+	"version": 8,
 	"gold": 0,
 	"damage_level": 1,
 	"attack_speed_level": 1,
@@ -24,6 +24,9 @@ const EXPECTED_DEFAULT_SAVE := {
 	"campaign_selected_boss": false,
 	"setting_auto_next_wave": true,
 	"setting_auto_start_boss": false,
+	"last_seen_unix": 0,
+	"pending_afk_gold": 0,
+	"pending_afk_seconds": 0,
 	"unlocked_ability_ids": ["evil_eye", "leg_sweep", "punch"],
 	"equipped_ability_slots": ["", "", "", "", "", "", "", ""]
 }
@@ -40,7 +43,7 @@ func run(environment) -> Array[String]:
 	environment.reset_progress()
 	_expect(save_manager.save_data == EXPECTED_DEFAULT_SAVE, "Reset did not restore the default save payload", failures)
 
-	save_manager.save_data = {
+	_write_raw_save_payload(save_manager, {
 		"version": 1,
 		"gold": 77,
 		"damage_level": 3,
@@ -54,8 +57,7 @@ func run(environment) -> Array[String]:
 		"monsters_killed": 9,
 		"unlocked_ability_ids": ["punch", "leg_sweep", "evil_eye"],
 		"equipped_ability_slots": ["punch", "leg_sweep", "evil_eye", "", "", "", "", ""]
-	}
-	save_manager.save()
+	})
 
 	save_manager.save_data.gold = 0
 	save_manager.save_data.wave = 1
@@ -91,11 +93,10 @@ func run(environment) -> Array[String]:
 	_expect(ability_system.is_unlocked("leg_sweep"), "Ability system did not reload unlocked abilities", failures)
 	_expect(ability_system.get_ability_slot(1) == "leg_sweep", "Ability system did not reload equipped slots", failures)
 
-	save_manager.save_data = {"gold": 10}
-	save_manager.save()
+	_write_raw_save_payload(save_manager, {"gold": 10})
 	save_manager.load_game()
 	ability_system.load_from_save()
-	_expect(save_manager.save_data.version == 7, "Save migration did not stamp the current version", failures)
+	_expect(save_manager.save_data.version == 8, "Save migration did not stamp the current version", failures)
 	_expect(save_manager.save_data.damage_level == 1, "Save migration did not restore missing damage level", failures)
 	_expect(save_manager.save_data.armor_level == 1, "Save migration did not restore missing armor level", failures)
 	_expect(save_manager.save_data.health_regen_level == 1, "Save migration did not restore missing regen level", failures)
@@ -127,8 +128,11 @@ func run(environment) -> Array[String]:
 		"Save migration did not restore empty ability slots",
 		failures
 	)
+	_expect(save_manager.save_data.last_seen_unix == 0, "Save migration did not restore default last seen time", failures)
+	_expect(save_manager.save_data.pending_afk_gold == 0, "Save migration did not restore default AFK gold", failures)
+	_expect(save_manager.save_data.pending_afk_seconds == 0, "Save migration did not restore default AFK time", failures)
 
-	save_manager.save_data = {
+	_write_raw_save_payload(save_manager, {
 		"version": 3,
 		"gold": 25,
 		"damage_level": 2,
@@ -138,10 +142,9 @@ func run(environment) -> Array[String]:
 		"crit_damage_level": 2,
 		"wave": 13,
 		"monsters_killed": 4
-	}
-	save_manager.save()
+	})
 	save_manager.load_game()
-	_expect(save_manager.save_data.version == 7, "Versioned migration did not advance the save version", failures)
+	_expect(save_manager.save_data.version == 8, "Versioned migration did not advance the save version", failures)
 	_expect(save_manager.save_data.armor_level == 1, "Versioned migration did not add armor level", failures)
 	_expect(save_manager.save_data.health_regen_level == 1, "Versioned migration did not add regen level", failures)
 	_expect(save_manager.save_data.wave == 3, "Versioned migration did not remap the legacy wave alias", failures)
@@ -169,5 +172,16 @@ func run(environment) -> Array[String]:
 		"Versioned migration did not add empty ability slots",
 		failures
 	)
+	_expect(save_manager.save_data.last_seen_unix == 0, "Versioned migration did not add AFK last seen time", failures)
+	_expect(save_manager.save_data.pending_afk_gold == 0, "Versioned migration did not add AFK gold state", failures)
+	_expect(save_manager.save_data.pending_afk_seconds == 0, "Versioned migration did not add AFK time state", failures)
 
 	return failures
+
+func _write_raw_save_payload(save_manager, payload: Dictionary) -> void:
+	var file := FileAccess.open(save_manager.SAVE_FILE, FileAccess.WRITE)
+	if file == null:
+		push_error("Failed to open save file during persistence test")
+		return
+	file.store_line(JSON.stringify(payload))
+	file.close()

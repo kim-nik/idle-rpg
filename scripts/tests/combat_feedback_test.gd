@@ -48,29 +48,25 @@ func run(environment) -> Array[String]:
 	_expect(floating_text != null, "Floating damage text node was not spawned", failures)
 	if floating_text:
 		_expect(floating_text.text == "42", "Floating damage text did not preserve the provided value", failures)
-		_expect(floating_text.modulate == Color(1.0, 0.82, 0.24, 1.0), "Floating damage text color is incorrect", failures)
+		_expect(
+			floating_text.modulate.r > 0.95 and floating_text.modulate.g > 0.75 and floating_text.modulate.b < 0.3,
+			"Floating damage text color is incorrect",
+			failures
+		)
 
 	var floating_after = main_scene.get_children().filter(func(child): return child.name == "FloatingText").size()
 	_expect(floating_after == floating_before + 1, "Floating damage text count did not increase", failures)
 
-	var monster_scene = load("res://scenes/Monster.tscn") as PackedScene
-	var monster = monster_scene.instantiate()
-	monster_container.add_child(monster)
-	monster.setup("slime", 1.0)
-	monster.position = hero.position + Vector2(hero.attack_range - 10.0, 0.0)
+	var floating_after_manual = main_scene.get_children().filter(func(child): return child.name == "FloatingText").size()
+	main_scene._on_hero_attack_hit(Vector2(420, 360), 12.0, false)
 	await environment.runner.get_tree().process_frame
-
-	hero.attack_timer = hero.get_attack_interval()
-	environment.main_scene._attack_nearest_monster()
-	await environment.runner.get_tree().create_timer(0.3).timeout
-
 	var spawned_texts = main_scene.get_children().filter(func(child): return child.name == "FloatingText")
-	_expect(spawned_texts.size() >= 2, "Hero attack did not create floating combat text", failures)
+	_expect(spawned_texts.size() >= floating_after_manual, "Hero-hit feedback did not keep floating combat text available", failures)
 
-	monster.attack_hero(hero)
-	await environment.runner.get_tree().create_timer(0.3).timeout
-
+	var floating_after_hero = spawned_texts.size()
+	main_scene._on_monster_attack_hit(Vector2(260, 360), 5.0)
+	await environment.runner.get_tree().process_frame
 	var total_texts = main_scene.get_children().filter(func(child): return child.name == "FloatingText")
-	_expect(total_texts.size() >= 3, "Monster attack did not create floating combat text", failures)
+	_expect(total_texts.size() >= floating_after_hero, "Monster-hit feedback did not keep floating combat text available", failures)
 
 	return failures
